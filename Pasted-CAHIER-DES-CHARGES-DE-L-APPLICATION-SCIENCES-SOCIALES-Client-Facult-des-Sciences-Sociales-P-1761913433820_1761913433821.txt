@@ -1,0 +1,89 @@
+CAHIER DES CHARGES DE L’APPLICATION « SCIENCES SOCIALES »
+Client : Faculté des Sciences Sociales, Politiques et Administratives, Université de Lubumbashi (UNILU)
+Nom de l’application / site web : SCIENCES SOCIALES
+________________________________________
+1. Objectif de l’application
+L’application « SCIENCES SOCIALES » a pour objectif de :
+•	Permettre l’inscription des étudiants de la faculté en ligne.
+•	Gérer les listes d’étudiants par département et promotion.
+•	Contrôler automatiquement la présence des étudiants et des enseignants lors des cours à l’aide de QR codes.
+•	Offrir un accès sécurisé à l’administration pour la gestion et l’export des données.
+________________________________________
+2. Fonctionnalités principales
+2.1. Inscription des étudiants
+Rubriques du formulaire d’inscription :
+•	Nom
+•	Postnom
+•	Prénom
+•	Sexe
+•	N° Téléphone
+•	Promotion (BAC 1, BAC 2, BAC 3, Master 1, Master 2)
+•	Département (RI, SPA POL, SPA SAM, Sociologie, Anthropologie)
+•	Joindre une photo
+Fonctionnalités techniques :
+•	Attribution automatique d’un numéro matricule unique pour chaque étudiant.
+•	Génération d’un QR code contenant toutes les informations de l’étudiant (nom, prénom, département, promotion, photo, matricule).
+•	Enregistrement automatique de toutes les informations dans la base de données.
+________________________________________
+2.2. Gestion des listes d’étudiants
+Organisation :
+•	Les listes doivent être triées par département et promotion.
+•	Chaque étudiant inscrit doit apparaître automatiquement dans la liste correspondante à son département et sa promotion.
+•	Affichage sous forme de tableau complet avec toutes les informations soumises par l’étudiant.
+Départements :
+•	Relation Internationale (RI)
+•	Sciences Politiques et Administratives (SPA) – Filières : Politique & Administration, SAM
+•	Anthropologie (Agie)
+•	Sociologie (Soc)
+Promotions :
+•	BAC 1, BAC 2, BAC 3
+•	Master 1, Master 2
+Accès administration :
+•	Une rubrique “DECANAT” accessible uniquement aux administrateurs.
+•	Accès sécurisé par mot de passe : DECANAT2026.
+•	L’administration peut :
+o	Visualiser toutes les listes par département et promotion.
+o	Télécharger les listes au format PDF, Word et Excel.
+________________________________________
+2.3. Gestion du contrôle de présence aux cours
+Principe de fonctionnement :
+1.	Chaque étudiant et professeur a un numéro matricule unique.
+2.	Le système génère un QR code unique contenant le numéro matricule et toutes les informations d’identité.
+3.	Lors de l’entrée dans l’auditoire, l’étudiant ou le professeur scanne le QR code via une tablette ou smartphone du professeur.
+4.	Le site enregistre automatiquement :
+o	L’heure d’entrée
+o	L’identité complète de l’étudiant ou du professeur
+o	Le cours associé
+5.	Génération automatique de listes de présence en temps réel.
+Fonctionnalités supplémentaires :
+•	Différencier automatiquement étudiants et professeurs via leur matricule.
+•	Export des listes de présence en PDF, Word ou Excel.
+•	Option de recherche par étudiant, professeur ou cours.
+•	Possibilité de suivre la présence cumulée par promotion, département ou semestre.
+________________________________________
+3. Exigences techniques
+•	Front-end : HTML, CSS, JavaScript (responsive pour mobile et tablette)
+•	Back-end : Python (Flask ou Django), ou Node.js
+•	Base de données : MySQL, PostgreSQL ou SQLite
+•	QR code :
+o	Génération automatique lors de l’inscription
+o	Lecture via html5-qrcode ou équivalent
+•	Sécurité :
+o	Accès administrateur protégé par mot de passe
+o	HTTPS pour protéger les données sensibles
+•	Export des données : PDF, Word, Excel pour toutes les listes et présences
+________________________________________
+4. Interfaces de l’application
+1.	Page d’accueil : informations générales de la faculté, accès aux étudiants et administration.
+2.	Inscription étudiants : formulaire complet avec upload photo et génération QR code.
+3.	Liste étudiants : tableau trié par département et promotion (visible uniquement par DECANAT).
+4.	DECANAT / Administration : gestion des étudiants, téléchargements des listes, gestion des cours.
+5.	Présence au cours : scan QR code pour enregistrer la présence, visualisation en temps réel.
+________________________________________
+5. Livrables attendus
+•	Application web complète déployée et fonctionnelle
+•	Base de données opérationnelle
+•	Système de génération et lecture QR code
+•	Export des listes (PDF, Word, Excel)
+•	Documentation technique et utilisateur
+

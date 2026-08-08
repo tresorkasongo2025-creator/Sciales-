@@ -1,0 +1,236 @@
+# CAHIER DES CHARGES — OPTION 1
+
+## Nouvelles fonctionnalités à intégrer à E-SCIALES UNILU+
+
+### 1. Suppression de toutes les soumissions de recours
+
+Dans le module **Recours**, ajouter une fonction permettant à l'administrateur autorisé de supprimer toutes les demandes de recours en une seule opération.
+
+**Bouton :**
+🗑️ **Supprimer tous les recours**
+
+Avant la suppression, afficher une confirmation :
+
+> ⚠️ Attention : cette opération supprimera toutes les demandes de recours enregistrées. Cette action est irréversible. Voulez-vous continuer ?
+
+Seul le **Décanat / Administrateur principal** peut effectuer cette opération.
+
+---
+
+### 2. Système de vérification des reçus
+
+Ajouter dans le module **Comptabilité** un menu :
+
+🔎 **Vérifier un reçu**
+
+La vérification peut se faire de deux manières :
+
+* par **référence / numéro du reçu**
+* par **scan du QR Code**
+
+Après vérification, le système affiche :
+
+**REÇU VALIDE — NON UTILISÉ**
+
+* Numéro du reçu
+* Nom de l'étudiant
+* Matricule
+* Département
+* Promotion
+* Montant
+* Date de génération
+* Session concernée
+* Statut : 🟢 Non utilisé
+
+Ou :
+
+**REÇU DÉJÀ UTILISÉ**
+
+* Numéro du reçu
+* Nom de l'étudiant
+* Matricule
+* Promotion
+* Date du premier scan
+* Heure
+* Session
+* Utilisé pour quel service
+* Nombre de tentatives
+
+Le système doit également empêcher qu'un même reçu soit utilisé par plusieurs étudiants.
+
+---
+
+### 3. Ajout manuel d'un étudiant dans les paiements Bulletin
+
+Prévoir le cas où :
+
+> Un étudiant a effectivement payé son bulletin et possède un reçu officiel, mais son résultat n'était pas encore disponible au moment où le paiement devait être enregistré. Son nom n'apparaît donc pas dans la liste automatique des étudiants ayant payé.
+
+Ajouter dans **Comptabilité → Paiements Bulletin** :
+
+➕ **Ajouter un étudiant manuellement**
+
+Informations :
+
+* Nom complet
+* Matricule
+* Département
+* Promotion
+* Année académique
+* Session
+* Numéro du reçu
+* Montant
+* Date du paiement
+
+Le système vérifie automatiquement que le reçu existe.
+
+Après validation :
+
+**✅ Paiement Bulletin validé manuellement**
+
+L'étudiant est alors ajouté à la liste officielle des paiements de sa promotion et de son département.
+
+Le système doit conserver la mention :
+
+> Ajout manuel par l'administration
+
+---
+
+### 4. Génération automatique des relevés de cotes
+
+Dans le **Décanat**, ajouter :
+
+📄 **Génération des relevés de cotes**
+
+Le système utilise automatiquement la grille de délibération soumise pour générer les relevés.
+
+Exemple :
+
+**Département : Relations Internationales**
+**Promotion : Licence 3**
+
+Après soumission de la grille :
+
+➡️ **Générer les relevés de cotes**
+
+Le système génère automatiquement le relevé pour chaque étudiant de cette promotion.
+
+L'administration doit uniquement pouvoir modifier l'**en-tête** du relevé.
+
+L'en-tête peut être configuré selon :
+
+* Première session
+* Session spéciale / recours 1
+* Deuxième session
+* Session spéciale / recours 2
+
+Le reste du relevé est généré automatiquement à partir de la grille.
+
+---
+
+### 5. Distinction des paiements par session
+
+Les paiements de bulletin doivent être séparés par session.
+
+Créer quatre catégories :
+
+#### SESSION 1
+
+💳 Paiements Bulletin — Première session
+
+#### RECOURS SESSION 1
+
+💳 Paiements Bulletin — Recours première session
+
+#### SESSION 2
+
+💳 Paiements Bulletin — Deuxième session
+
+#### RECOURS SESSION 2
+
+💳 Paiements Bulletin — Recours deuxième session
+
+Chaque paiement doit être rattaché à une seule session afin d'éviter les erreurs comptables.
+
+---
+
+### 6. Rapports PDF
+
+La Comptabilité doit pouvoir télécharger les rapports en PDF.
+
+Rapports disponibles :
+
+#### A. Liste des paiements
+
+* Département
+* Promotion
+* Session
+* Nom
+* Matricule
+* Numéro de reçu
+* Montant
+* Date
+* Statut
+
+#### B. Liste des étudiants n'ayant pas encore payé
+
+Exemple :
+
+> **14 étudiants n'ont pas encore payé**
+
+Le PDF doit afficher :
+
+* Nom
+* Matricule
+* Département
+* Promotion
+* Session
+* Statut : NON PAYÉ
+
+#### C. Liste des tentatives de scan suspectes
+
+Le système doit enregistrer les tentatives anormales :
+
+* Reçu inexistant
+* QR déjà utilisé
+* Reçu utilisé par un autre étudiant
+* Plusieurs scans successifs
+* Tentative avec matricule différent
+* Reçu appartenant à une autre promotion
+* Reçu appartenant à une autre session
+
+Bouton :
+
+📥 **Télécharger le rapport des tentatives suspectes en PDF**
+
+---
+
+### 7. Tableau de bord Comptabilité
+
+Afficher notamment :
+
+* 💰 Total des paiements
+* 👥 Étudiants ayant payé
+* ⏳ Étudiants non payés
+* 🎫 Reçus générés
+* ✅ Reçus utilisés
+* ⚠️ Reçus suspects
+* 🚫 Reçus invalides
+
+Avec filtre :
+
+**Département → Promotion → Session → Date**
+
+---
+
+### 8. Sécurité
+
+Toutes les opérations sensibles doivent être enregistrées dans un historique :
+
+* Qui a supprimé les recours
+* Qui a ajouté manuellement un étudiant
+* Qui a validé un reçu
+* Qui a modifié un paiement
+* Qui a généré un relevé
+* Qui a effectué une vérification de reçu
+* Date et heure de l'opération

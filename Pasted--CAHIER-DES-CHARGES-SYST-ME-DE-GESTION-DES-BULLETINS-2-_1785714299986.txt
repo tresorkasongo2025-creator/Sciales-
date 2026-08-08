@@ -1,0 +1,514 @@
+# CAHIER DES CHARGES
+
+## SYSTÈME DE GESTION DES BULLETINS — 2ᵉ SESSION ET RECOURS DE 2ᵉ SESSION
+
+### 1. OBJET DU PROJET
+
+Le présent cahier des charges définit les fonctionnalités à ajouter à l'application de consultation des résultats afin de permettre la gestion de :
+
+* la **Délibération de 2ᵉ Session** ;
+* la **Délibération de Recours de 2ᵉ Session**.
+
+Ces deux nouvelles étapes doivent fonctionner selon le même principe que la délibération initiale et le recours de la 1ʳᵉ session, tout en garantissant que les étudiants non concernés ne soient jamais bloqués ni obligés de payer à nouveau.
+
+---
+
+# 2. OBJECTIF PRINCIPAL
+
+L'application doit permettre à l'administration de publier plusieurs grilles de délibération et de déterminer automatiquement, à partir du **matricule de l'étudiant**, si celui-ci est concerné par une nouvelle étape.
+
+Chaque étape doit être indépendante.
+
+Les quatre niveaux sont :
+
+1. **Délibération 1ʳᵉ session**
+2. **Recours 1ʳᵉ session**
+3. **Délibération 2ᵉ session**
+4. **Recours 2ᵉ session**
+
+Le paiement effectué pour une étape ne doit pas automatiquement donner accès aux autres étapes.
+
+---
+
+# 3. PRINCIPE GÉNÉRAL
+
+Le système doit fonctionner avec le matricule comme identifiant principal.
+
+Lorsqu'une grille est importée, l'application doit identifier automatiquement les étudiants concernés.
+
+### Exemple
+
+Un étudiant :
+
+* n'apparaît pas dans la grille 1ʳᵉ session ;
+* n'apparaît pas dans la grille de recours 1ʳᵉ session ;
+* apparaît dans la grille 2ᵉ session.
+
+Le système doit alors considérer uniquement la 2ᵉ session.
+
+Résultat :
+
+* 1ʳᵉ session : non concerné ;
+* recours 1ʳᵉ session : non concerné ;
+* 2ᵉ session : concerné et paiement requis ;
+* recours 2ᵉ session : non concerné jusqu'à la publication d'une éventuelle grille.
+
+---
+
+# 4. DÉLIBÉRATION DE 2ᵉ SESSION
+
+## 4.1 Importation de la grille
+
+L'administrateur doit disposer d'un menu permettant de publier/importer la :
+
+**GRILLE DE DÉLIBÉRATION DE 2ᵉ SESSION**
+
+La grille peut être importée sous forme de fichier Excel.
+
+Les informations doivent notamment permettre d'identifier :
+
+* matricule ;
+* nom et postnom ;
+* prénom, si disponible ;
+* promotion/classe ;
+* résultats ;
+* autres informations présentes dans la grille.
+
+Le matricule doit être utilisé comme élément principal de correspondance.
+
+---
+
+# 5. IDENTIFICATION AUTOMATIQUE DES ÉTUDIANTS DE 2ᵉ SESSION
+
+Lors de l'importation de la grille, l'application doit comparer automatiquement les matricules avec les étudiants déjà enregistrés.
+
+Pour chaque étudiant présent dans la grille de 2ᵉ session :
+
+```text
+concerne_session_2 = OUI
+paiement_session_2 = NON
+```
+
+Pour un étudiant absent de la grille :
+
+```text
+concerne_session_2 = NON
+```
+
+Il ne doit donc pas être obligé de payer la 2ᵉ session.
+
+---
+
+# 6. ACCÈS AU BULLETIN DE 2ᵉ SESSION
+
+Lorsqu'un étudiant introduit son matricule dans le menu **Bulletin**, le système doit vérifier son statut.
+
+### Cas 1 : étudiant non concerné
+
+Si le matricule n'est pas présent dans la grille de 2ᵉ session :
+
+> L'étudiant ne doit pas recevoir une demande de paiement pour la 2ᵉ session.
+
+Son accès aux autres bulletins déjà autorisés reste inchangé.
+
+### Cas 2 : étudiant concerné mais non payé
+
+Si le matricule est présent dans la grille :
+
+> ⚠️ Votre dossier est concerné par la délibération de 2ᵉ session.
+
+Le système affiche :
+
+**« Veuillez scanner votre reçu de paiement pour consulter votre bulletin de 2ᵉ session. »**
+
+Le bouton :
+
+**SCANNER LE REÇU DE 2ᵉ SESSION**
+
+doit être disponible.
+
+### Cas 3 : paiement déjà validé
+
+Si le reçu de 2ᵉ session a déjà été validé :
+
+```text
+paiement_session_2 = OUI
+```
+
+l'étudiant peut consulter librement son bulletin de 2ᵉ session sans rescanner le reçu.
+
+---
+
+# 7. VALIDATION DU REÇU DE 2ᵉ SESSION
+
+Le système doit vérifier :
+
+* l'existence du reçu ;
+* son numéro unique ;
+* son QR code ;
+* sa validité ;
+* son type de paiement ;
+* qu'il correspond à la 2ᵉ session ;
+* qu'il n'a pas déjà été utilisé par un autre étudiant.
+
+Après validation :
+
+```text
+paiement_session_2 = OUI
+```
+
+Le système affiche :
+
+> ✅ Paiement validé avec succès.
+>
+> Votre bulletin de 2ᵉ session est maintenant accessible.
+
+L'accès doit ensuite rester ouvert à l'étudiant.
+
+---
+
+# 8. RECOURS DE 2ᵉ SESSION
+
+Une deuxième fonctionnalité doit permettre à l'administration de publier :
+
+**GRILLE DE DÉLIBÉRATION DE RECOURS DE 2ᵉ SESSION**
+
+Cette grille doit être totalement indépendante des grilles précédentes.
+
+---
+
+# 9. IDENTIFICATION DES ÉTUDIANTS EN RECOURS DE 2ᵉ SESSION
+
+Après importation de la grille, le système recherche automatiquement les matricules concernés.
+
+Pour chaque étudiant présent :
+
+```text
+concerne_recours_session_2 = OUI
+paiement_recours_session_2 = NON
+```
+
+Pour chaque étudiant absent :
+
+```text
+concerne_recours_session_2 = NON
+```
+
+---
+
+# 10. ACCÈS AU BULLETIN DE RECOURS DE 2ᵉ SESSION
+
+### Étudiant non concerné
+
+S'il n'est pas présent dans la grille :
+
+> Aucun paiement supplémentaire ne doit être demandé.
+
+### Étudiant concerné et non payé
+
+Le système affiche :
+
+> ⚠️ Votre dossier est concerné par le recours de 2ᵉ session.
+>
+> Veuillez effectuer le paiement et scanner votre reçu afin de consulter votre bulletin de recours.
+
+Bouton :
+
+**SCANNER LE REÇU DE RECOURS 2ᵉ SESSION**
+
+### Étudiant ayant déjà payé
+
+Si :
+
+```text
+paiement_recours_session_2 = OUI
+```
+
+alors son bulletin de recours de 2ᵉ session est accessible librement.
+
+---
+
+# 11. INDÉPENDANCE DES QUATRE ÉTAPES
+
+Il est obligatoire que les quatre étapes soient indépendantes.
+
+Le système ne doit jamais appliquer une règle du type :
+
+> « Si l'étudiant n'a pas payé la 1ʳᵉ session, il ne peut pas accéder à la 2ᵉ session. »
+
+Cette règle est interdite.
+
+Un étudiant peut être directement concerné par la 2ᵉ session même s'il n'était pas présent dans les grilles précédentes.
+
+### Exemple
+
+```text
+Étudiant : MAT001
+
+1ʳᵉ SESSION
+Non concerné
+
+RECOURS 1ʳᵉ SESSION
+Non concerné
+
+2ᵉ SESSION
+Concerné
+↓
+Paiement requis
+↓
+Reçu validé
+↓
+Bulletin accessible
+
+RECOURS 2ᵉ SESSION
+Non concerné
+```
+
+---
+
+# 12. STRUCTURE DES STATUTS
+
+Chaque étudiant doit pouvoir avoir des statuts indépendants :
+
+```text
+session_initiale_concernee
+session_initiale_payee
+
+recours_initial_concerne
+recours_initial_paye
+
+session_2_concernee
+session_2_payee
+
+recours_session_2_concerne
+recours_session_2_paye
+```
+
+Cette structure permettra au système de savoir exactement quel bulletin doit être accessible ou verrouillé.
+
+---
+
+# 13. GESTION DES REÇUS
+
+Chaque type de paiement doit avoir son propre type de reçu.
+
+### Types
+
+```text
+BULLETIN_INITIAL
+
+RECOURS_1_SESSION
+
+BULLETIN_2_SESSION
+
+RECOURS_2_SESSION
+```
+
+Un reçu destiné à la 1ʳᵉ session ne doit pas pouvoir être utilisé pour débloquer le bulletin de 2ᵉ session.
+
+De même, un reçu de 2ᵉ session ne doit pas pouvoir être utilisé pour le recours de 2ᵉ session.
+
+---
+
+# 14. RÈGLE DU REÇU À USAGE UNIQUE
+
+Chaque reçu doit conserver son numéro unique et son QR code unique.
+
+Une fois qu'un reçu est validé pour un étudiant :
+
+```text
+reçu_utilise = OUI
+```
+
+Il ne doit plus pouvoir être utilisé par une autre personne.
+
+Le système doit conserver dans l'historique :
+
+* numéro du reçu ;
+* QR code ;
+* matricule ;
+* étudiant ;
+* type de paiement ;
+* date de validation ;
+* heure de validation ;
+* statut.
+
+---
+
+# 15. MENU ADMINISTRATEUR
+
+L'administrateur doit disposer de menus séparés :
+
+### Résultats
+
+* Délibération 1ʳᵉ session
+* Recours 1ʳᵉ session
+* Délibération 2ᵉ session
+* Recours 2ᵉ session
+
+### Gestion des reçus
+
+* Générer un reçu
+* Liste des reçus
+* Rechercher un reçu
+* Vérifier un reçu
+* Voir les reçus utilisés
+* Voir les reçus disponibles
+
+### Gestion des étudiants
+
+* Rechercher par matricule
+* Voir le statut de l'étudiant
+* Voir les paiements
+* Voir les bulletins accessibles
+* Voir l'historique des consultations
+
+---
+
+# 16. TABLEAU DE SUIVI ADMINISTRATEUR
+
+L'administration doit pouvoir consulter un tableau comme :
+
+| Matricule | Étudiant   | 1ʳᵉ Session | Recours 1ʳᵉ | 2ᵉ Session | Recours 2ᵉ |
+| --------- | ---------- | ----------- | ----------- | ---------- | ---------- |
+| MAT001    | Étudiant A | Accessible  | —           | —          | —          |
+| MAT002    | Étudiant B | —           | —           | 🔒 À payer | —          |
+| MAT003    | Étudiant C | —           | —           | 🔓 Payé    | —          |
+| MAT004    | Étudiant D | —           | —           | 🔓 Payé    | 🔒 À payer |
+
+Cela permettra à l'administration de connaître immédiatement la situation de chaque étudiant.
+
+---
+
+# 17. RÈGLE ESSENTIELLE DE SÉCURITÉ
+
+La présence d'un étudiant dans une nouvelle grille doit être déterminée **uniquement à partir du matricule**.
+
+Le système ne doit pas se baser uniquement sur le nom, car plusieurs étudiants peuvent avoir des noms similaires.
+
+La correspondance doit donc être :
+
+```text
+MATRICULE GRILLE
+        =
+MATRICULE ÉTUDIANT
+```
+
+Si la correspondance est exacte :
+
+> Étudiant identifié.
+
+---
+
+# 18. CONSERVATION DES ANCIENS ACCÈS
+
+La publication d'une nouvelle grille ne doit jamais supprimer ou verrouiller les droits précédemment acquis.
+
+Exemple :
+
+Un étudiant a déjà payé son bulletin initial.
+
+Même après la publication :
+
+* de la grille de recours ;
+* de la grille de 2ᵉ session ;
+* de la grille de recours de 2ᵉ session ;
+
+son accès au bulletin initial reste disponible.
+
+Les nouveaux paiements servent uniquement à débloquer les nouvelles étapes auxquelles il est effectivement concerné.
+
+---
+
+# 19. RÉSUMÉ DU PARCOURS ÉTUDIANT
+
+### Étape 1 — Délibération initiale
+
+```text
+Matricule
+↓
+Reçu initial
+↓
+Validation
+↓
+Bulletin initial accessible
+```
+
+### Étape 2 — Recours
+
+```text
+Présent dans la grille ?
+       ↓
+      OUI
+       ↓
+Paiement recours
+       ↓
+Validation reçu
+       ↓
+Bulletin recours accessible
+```
+
+### Étape 3 — 2ᵉ session
+
+```text
+Présent dans la grille ?
+       ↓
+      OUI
+       ↓
+Paiement 2ᵉ session
+       ↓
+Validation reçu
+       ↓
+Bulletin 2ᵉ session accessible
+```
+
+### Étape 4 — Recours 2ᵉ session
+
+```text
+Présent dans la grille ?
+       ↓
+      OUI
+       ↓
+Paiement recours 2ᵉ session
+       ↓
+Validation reçu
+       ↓
+Bulletin recours 2ᵉ session accessible
+```
+
+---
+
+# 20. RÈGLE FINALE DU SYSTÈME
+
+La règle fondamentale à respecter lors du développement est :
+
+> **UN ÉTUDIANT NE PAIE QUE POUR LA DÉLIBÉRATION À LAQUELLE IL EST CONCERNÉ ET POUR LAQUELLE IL N'A PAS ENCORE VALIDÉ SON PAIEMENT.**
+
+La publication d'une nouvelle grille ne doit jamais bloquer les anciens bulletins déjà payés.
+
+Chaque nouvelle grille doit uniquement créer un **nouvel accès sécurisé et indépendant** pour les étudiants qui y apparaissent.
+
+---
+
+## 21. RÉSULTAT ATTENDU
+
+À la fin de l'intégration, l'application devra permettre de gérer automatiquement :
+
+**1ʳᵉ SESSION → RECOURS → 2ᵉ SESSION → RECOURS 2ᵉ SESSION**
+
+avec :
+
+* identification automatique par matricule ;
+* importation des grilles Excel ;
+* verrouillage uniquement des étudiants concernés ;
+* paiement par reçu ;
+* QR code unique ;
+* reçu à usage unique ;
+* validation automatique ;
+* accès permanent après paiement ;
+* conservation des anciens accès ;
+* séparation complète des quatre types de paiement ;
+* historique des opérations ;
+* tableau de suivi administratif.
+
+**Aucun étudiant non concerné par une grille ne doit être obligé de payer pour cette grille.**
