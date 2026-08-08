@@ -20,4 +20,3 @@ cryptography
 docx
 opencv-python-headless==5.0.0.93
 PyMuPDF==1.28.0
-replit-object-storage
