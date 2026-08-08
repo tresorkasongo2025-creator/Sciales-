@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Espace de communication{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-shell { max-width: 850px; margin: 0 auto; }
+    .chat-hero { background:linear-gradient(135deg,#0d2666,#2563eb); color:#fff;
+        border-radius:16px; padding:1.5rem; text-align:center; margin-bottom:1rem; }
+    .chat-login, .chat-panel { background:#fff; border-radius:16px; padding:1.25rem;
+        box-shadow:0 3px 18px rgba(0,0,0,.12); }
+    .chat-login { max-width:520px; margin:0 auto; }
+    .chat-login label { display:block; font-weight:700; margin:.7rem 0 .25rem; color:#0d2666; }
+    .chat-login input, .chat-login select { width:100%; box-sizing:border-box; padding:.75rem;
+        border:1px solid #cbd5e1; border-radius:8px; font-size:1rem; }
+    .chat-messages { min-height:280px; max-height:58vh; overflow-y:auto; padding:.5rem;
+        background:#f5f8ff; border-radius:12px; }
+    .chat-message { max-width:82%; padding:.65rem .8rem; border-radius:12px; margin:.45rem 0;
+        white-space:pre-wrap; overflow-wrap:anywhere; }
+    .chat-message.student { margin-left:auto; background:#dce8ff; color:#0d2666; }
+    .chat-message.decanat { margin-right:auto; background:#e8f7ee; color:#174d2d; }
+    .chat-message small { display:block; opacity:.65; font-size:.7rem; margin-top:.25rem; }
+    .chat-compose { display:flex; gap:.5rem; margin-top:.8rem; }
+    .chat-compose textarea { flex:1; resize:vertical; min-height:45px; padding:.65rem;
+        border:1px solid #cbd5e1; border-radius:8px; font-family:inherit; }
+    @media (max-width:600px) {
+        .chat-message { max-width:92%; }
+        .chat-compose { flex-direction:column; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-shell">
+    <div class="chat-hero">
+        <h2>💬 Espace de communication</h2>
+        <p>Contactez le DÉCANAT avec votre CODE-ID FAC privé.</p>
+    </div>
+
+    {% if mode == 'disabled' %}
+    <div class="chat-login" style="text-align:center;">
+        <h3>🔒 Communication momentanément désactivée</h3>
+        <p>Le DÉCANAT a temporairement désactivé cet espace. Veuillez réessayer plus tard.</p>
+    </div>
+    {% elif mode == 'login' %}
+    <div class="chat-login">
+        <h3>Créer ou ouvrir mon compte contact</h3>
+        <p style="color:#666;font-size:.9rem;">
+            Entrez uniquement le CODE-ID FAC publié dans la liste officielle des identifiants.
+            Votre nom et votre promotion seront reconnus automatiquement.
+        </p>
+        {% if registration_open %}
+        <form method="POST">
+            <label for="matricule">CODE-ID FAC publié</label>
+            <input id="matricule" name="matricule" placeholder="Ex : ETU6083"
+                   autocomplete="username" required>
+            <button class="btn btn-primary" type="submit" style="width:100%;margin-top:1rem;">
+                Créer / ouvrir mon contact
+            </button>
+        </form>
+        {% else %}
+        <div class="alert alert-warning" style="margin-top:1rem;">
+            Les nouvelles inscriptions de contact sont fermées pour le moment.
+            Les comptes déjà créés peuvent toujours se connecter avec leur CODE-ID FAC.
+        </div>
+        <form method="POST">
+            <label for="matricule">CODE-ID FAC de votre compte</label>
+            <input id="matricule" name="matricule" placeholder="Ex : ETU6083"
+                   autocomplete="username" required>
+            <button class="btn btn-secondary" type="submit" style="width:100%;margin-top:.7rem;">
+                Ouvrir mon espace existant
+            </button>
+        </form>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="chat-panel">
+        <div style="display:flex;justify-content:space-between;gap:.5rem;align-items:center;flex-wrap:wrap;">
+            <div>
+                <strong>{{ thread.nom_complet }}</strong><br>
+                <small>{{ thread.matricule }} · {{ thread.promotion }}</small>
+            </div>
+            <a class="btn btn-secondary" href="{{ url_for('chat_deconnexion') }}">Déconnexion</a>
+        </div>
+        <div id="chatMessages" class="chat-messages" style="margin-top:1rem;"></div>
+        <form id="chatForm" class="chat-compose">
+            <textarea id="chatText" placeholder="Écrivez votre message..." maxlength="4000"></textarea>
+            <button class="btn btn-primary" type="submit">Envoyer</button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if mode == 'chat' %}
+<script>
+const messagesEl = document.getElementById('chatMessages');
+function renderMessages(items) {
+  messagesEl.innerHTML = '';
+  items.forEach(m => {
+    const box = document.createElement('div');
+    box.className = 'chat-message ' + (m.role === 'etudiant' ? 'student' : 'decanat');
+    const body = document.createElement('div');
+    body.textContent = m.contenu || '';
+    box.appendChild(body);
+    const meta = document.createElement('small');
+    meta.textContent = m.nom + ' · ' + m.date; box.appendChild(meta);
+    messagesEl.appendChild(box);
+  });
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+async function refreshMessages() {
+  const r = await fetch('{{ url_for("chat_messages") }}');
+  if (r.ok) renderMessages((await r.json()).messages);
+}
+document.getElementById('chatForm').addEventListener('submit', async e => {
+  e.preventDefault(); const text = document.getElementById('chatText');
+  if (!text.value.trim()) return;
+  const fd = new FormData(); fd.append('contenu', text.value.trim());
+  const r = await fetch('{{ url_for("chat_message") }}', {method:'POST', body:fd});
+  if (r.ok) { text.value=''; refreshMessages(); }
+});
+refreshMessages(); setInterval(refreshMessages, 5000);
+</script>
+{% endif %}
+{% endblock %}

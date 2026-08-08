@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des horaires - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📅 Gestion des horaires de cours</h2>
+    <div class="header-actions">
+        <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="form-container">
+    <h3>➕ Publier un nouvel horaire</h3>
+    <form method="POST" enctype="multipart/form-data" class="inscription-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="departement">Département *</label>
+                <select id="departement" name="departement" required>
+                    <option value="">Sélectionner...</option>
+                    {% for dept in departements %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="promotion">Promotion *</label>
+                <select id="promotion" name="promotion" required>
+                    <option value="">Sélectionner...</option>
+                    {% for promo in promotions %}
+                    <option value="{{ promo }}">{{ promo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="type_horaire">Type d'horaire *</label>
+                <select id="type_horaire" name="type_horaire" required>
+                    <option value="">Sélectionner...</option>
+                    <option value="normal">Horaire normal</option>
+                    <option value="complement">Horaire de complément</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="fichier">Fichier de l'horaire (PDF ou Image) *</label>
+                <input type="file" id="fichier" name="fichier" required accept=".pdf,.png,.jpg,.jpeg">
+                <small style="color: #666;">Formats acceptés: PDF, PNG, JPG, JPEG</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                ✅ Publier l'horaire
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="table-container" style="margin-top: 2rem;">
+    <h3 style="margin-bottom: 1rem; padding: 0 1rem;">Horaires publiés</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Département</th>
+                <th>Promotion</th>
+                <th>Type</th>
+                <th>Fichier</th>
+                <th>Date de publication</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if horaires %}
+                {% for horaire in horaires %}
+                <tr>
+                    <td>{{ horaire.departement }}</td>
+                    <td>{{ horaire.promotion }}</td>
+                    <td>
+                        {% if horaire.type_horaire == 'normal' %}
+                        <span class="badge badge-student">📋 Normal</span>
+                        {% else %}
+                        <span class="badge badge-teacher">📝 Complément</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('fichier_persistant', category='horaires', filename=horaire.fichier) }}" target="_blank" class="btn btn-primary" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                            📄 Voir
+                        </a>
+                    </td>
+                    <td>{{ horaire.date_publication.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('supprimer_horaire', horaire_id=horaire.id) }}" 
+                              style="display: inline;" 
+                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet horaire ?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                                🗑️ Supprimer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        Aucun horaire publié. Publiez votre premier horaire ci-dessus.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="table-footer">
+    <p><strong>Total:</strong> {{ horaires|length }} horaires publiés</p>
+</div>
+{% endblock %}

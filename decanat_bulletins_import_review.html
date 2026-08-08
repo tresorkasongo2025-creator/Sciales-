@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block title %}Vérification des matricules – DECANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .review-hero {
+        background: linear-gradient(135deg, #0d2666 0%, #1a4db8 100%);
+        color: white; padding: 1.6rem 2rem; border-radius: 12px; margin-bottom: 1.2rem;
+    }
+    .review-hero h2 { margin: 0 0 .35rem; }
+    .review-hero p { margin: 0; opacity: .88; }
+    .review-card {
+        background: white; border-radius: 12px; padding: 1.3rem 1.5rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.2rem;
+    }
+    .stats { display:flex; gap:.7rem; flex-wrap:wrap; margin-bottom:1.2rem; }
+    .stat {
+        border-radius:9px; padding:.65rem .9rem; font-size:.87rem; font-weight:700;
+    }
+    .stat-blue { background:#eaf0ff; color:#0d2666; }
+    .stat-green { background:#e8f7ee; color:#146c43; }
+    .stat-orange { background:#fff3cd; color:#856404; }
+    .notice {
+        background:#fff8e8; border:1.5px solid #e3b341; border-radius:9px;
+        padding:.85rem 1rem; color:#654600; font-size:.88rem; line-height:1.45;
+        margin-bottom:1.2rem;
+    }
+    .table-wrap { overflow-x:auto; }
+    .review-table { width:100%; border-collapse:collapse; min-width:850px; }
+    .review-table th {
+        background:#0d2666; color:white; padding:.65rem .75rem;
+        text-align:left; font-size:.82rem; white-space:nowrap;
+    }
+    .review-table td {
+        padding:.55rem .75rem; border-bottom:1px solid #edf0f5;
+        font-size:.85rem; vertical-align:middle;
+    }
+    .review-table tr.needs-review td { background:#fffaf0; }
+    .review-table tr.ambiguous td { background:#fff4e6; }
+    .review-table tr.duplicate td { background:#fff0f0; }
+    .badge {
+        display:inline-block; border-radius:15px; padding:.18rem .55rem;
+        font-size:.72rem; font-weight:700; white-space:nowrap;
+    }
+    .badge-ok { background:#d8f3e3; color:#146c43; }
+    .badge-review { background:#ffe8b3; color:#856404; }
+    .badge-error { background:#f8d7da; color:#842029; }
+    .mat-select {
+        min-width:250px; max-width:360px; padding:.42rem .55rem;
+        border:1.5px solid #d9a441; border-radius:6px; background:#fff;
+        font-size:.82rem;
+    }
+    .mat-ok { color:#146c43; font-weight:700; }
+    .actions {
+        display:flex; gap:.7rem; flex-wrap:wrap; align-items:center;
+        margin-top:1.2rem;
+    }
+    .action-btn {
+        border:0; border-radius:7px; padding:.65rem 1.1rem;
+        font-size:.88rem; font-weight:700; cursor:pointer;
+    }
+    .action-primary { background:#198754; color:white; }
+    .action-secondary { background:white; color:#555; border:1.5px solid #bbb; }
+    .help { color:#777; font-size:.8rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="review-hero">
+    <h2>🔎 Vérification des matricules</h2>
+    <p>
+        {{ payload.promotion }} · {{ payload.semestre }} · {{ payload.annee }}
+        ·
+        <strong>
+            {% if payload.type_grille|default('initial') == 'recours' %}
+                1ère session — recours
+            {% elif payload.type_grille|default('initial') == 'session_2' %}
+                2ème session — délibération
+            {% elif payload.type_grille|default('initial') == 'recours_session_2' %}
+                2ème session — recours
+            {% else %}
+                1ère session — délibération initiale
+            {% endif %}
+        </strong>
+    </p>
+</div>
+
+<div class="review-card">
+    <div class="stats">
+        <span class="stat stat-blue">👥 {{ assignments|length }} étudiant(s)</span>
+        <span class="stat stat-green">✅ {{ confirmes }} correspondance(s) sûre(s)</span>
+        <span class="stat stat-orange">⚠️ {{ a_verifier }} cas à vérifier</span>
+        <span class="stat stat-blue">📋 Liste : {{ payload.liste_promotion }}</span>
+    </div>
+    <div class="notice">
+        <strong>Validation obligatoire avant l’enregistrement.</strong>
+        Les correspondances sûres utilisent le nom complet ou les tokens nom/post-nom.
+        Les noms identiques, absents ou associés à plusieurs lignes doivent être vérifiés.
+        Un matricule de la grille Excel ne sera jamais utilisé automatiquement.
+        {% if payload.type_grille|default('initial') == 'recours' %}
+        Cette importation ajoute le recours de 1ère session sans remplacer les bulletins initiaux.
+        L’accès nécessite un reçu <strong>RR-</strong>.
+        {% elif payload.type_grille|default('initial') == 'session_2' %}
+        Cette importation ajoute la délibération de 2ème session. Elle ne remplace
+        aucune étape précédente et nécessite un reçu <strong>S2-</strong>.
+        {% elif payload.type_grille|default('initial') == 'recours_session_2' %}
+        Cette importation ajoute le recours de 2ème session. Elle ne remplace
+        aucune étape précédente et nécessite un reçu <strong>R2-</strong>.
+        {% else %}
+        Cette importation concerne la délibération de 1ère session et nécessite un reçu <strong>B-</strong>.
+        {% endif %}
+    </div>
+
+    <form method="POST" action="{{ url_for('decanat_bulletins_import_review', token=draft.token) }}"
+          onsubmit="return confirm('Enregistrer cette grille avec les matricules sélectionnés ?\\n\\nLes résultats seront ensuite consultables par matricule.')">
+        <div class="table-wrap">
+            <table class="review-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nom dans la grille</th>
+                        <th>Nom dans la liste</th>
+                        <th>Correspondance</th>
+                        <th>Matricule officiel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in assignments %}
+                    {% set field = 'matricule_' ~ item.index %}
+                    {% set selected = submitted.get(field, item.matricule) if submitted is defined else item.matricule %}
+                    <tr class="{% if item.statut != 'confirme' %}needs-review {% endif %}{{ item.statut }}">
+                        <td>{{ loop.index }}</td>
+                        <td><strong>{{ item.nom }}</strong></td>
+                        <td>
+                            {% if item.nom_liste %}
+                                {{ item.nom_liste }}
+                            {% elif item.candidats %}
+                                {% for candidate in item.candidats %}
+                                    <div>{{ candidate.nom }} <small>({{ candidate.matricule }})</small></div>
+                                {% endfor %}
+                            {% else %}
+                                <span style="color:#842029;">Aucune correspondance</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if item.statut == 'confirme' %}
+                                <span class="badge badge-ok">✅ {{ item.type_correspondance }}</span>
+                            {% elif item.statut == 'ambigu' %}
+                                <span class="badge badge-review">⚠️ Noms identiques</span>
+                            {% elif item.statut == 'doublon' %}
+                                <span class="badge badge-error">⚠️ Matricule répété</span>
+                            {% else %}
+                                <span class="badge badge-error">❌ Introuvable</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <select class="mat-select" name="{{ field }}" required>
+                                <option value="">— Sélectionner le matricule officiel —</option>
+                                {% set seen = [] %}
+                                {% for candidate in item.candidats %}
+                                    {% if candidate.matricule not in seen %}
+                                        <option value="{{ candidate.matricule }}"
+                                            {% if selected == candidate.matricule %}selected{% endif %}>
+                                            {{ candidate.matricule }} — {{ candidate.nom }}
+                                        </option>
+                                        {% set _ = seen.append(candidate.matricule) %}
+                                    {% endif %}
+                                {% endfor %}
+                                <optgroup label="Tous les matricules de la promotion">
+                                {% for official in identifiants %}
+                                    {% if official.matricule not in seen %}
+                                        <option value="{{ official.matricule }}"
+                                            {% if selected == official.matricule %}selected{% endif %}>
+                                            {{ official.matricule }} — {{ official.nom }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                                </optgroup>
+                            </select>
+                            {% if item.statut == 'confirme' %}
+                                <div class="help" style="margin-top:.25rem;">
+                                    Proposition automatique — modifiable si nécessaire
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <button type="submit" name="action" value="valider"
+                    class="action-btn action-primary">
+                ✅ Valider les matricules et enregistrer les bulletins
+            </button>
+            <button type="submit" name="action" value="annuler"
+                    class="action-btn action-secondary" formnovalidate>
+                Annuler l’import
+            </button>
+            <span class="help">Les matricules doivent être uniques et provenir de la liste officielle.</span>
+        </div>
+    </form>
+</div>
+{% endblock %}

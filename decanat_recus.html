@@ -1,0 +1,977 @@
+{% extends "base.html" %}
+{% block title %}Génération de Reçus – DECANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine: #0d2666; --bleu: #1a4db8; --or: #bfa01a; }
+
+.rec-hero {
+    background: linear-gradient(135deg, var(--marine) 0%, #1a4db8 60%, #1e56d0 100%);
+    color: white; padding: 2rem; border-radius: 14px; margin-bottom: 2rem;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.rec-hero h2 { margin: 0 0 .3rem; font-size: 1.7rem; }
+.rec-hero p  { margin: 0; opacity: .85; }
+
+.stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1rem; margin-bottom: 2rem; }
+.stat-box { background: white; border-radius: 12px; padding: 1.3rem 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); text-align: center; border-top: 4px solid; }
+.stat-box.c1 { border-color: var(--bleu); }
+.stat-box.c2 { border-color: #198754; }
+.stat-box.c3 { border-color: #fd7e14; }
+.stat-box.c4 { border-color: #e08a00; }
+
+.badge-deja-paye {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: #fff3cd; color: #7a5000; border: 1.5px solid #e08a00;
+    border-radius: 20px; padding: .15rem .6rem; font-size: .75rem; font-weight: 700; }
+.stat-box .snum { font-size: 2rem; font-weight: 800; color: var(--marine); }
+.stat-box .slbl { font-size: .82rem; color: #666; margin-top: .2rem; }
+
+.panel { background: white; border-radius: 14px; padding: 1.8rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.8rem; }
+.panel h3 { margin-top: 0; color: var(--marine); border-bottom: 2px solid #e8ecf5;
+    padding-bottom: .7rem; font-size: 1.1rem; }
+
+/* Formulaire */
+.gen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr)); gap: 1rem; margin-bottom: 1rem; }
+.gen-grid-wide { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: .3rem; }
+.form-group label { font-weight: 700; font-size: .8rem; color: #444; text-transform: uppercase; letter-spacing: .5px; }
+.form-group input, .form-group select, .form-group textarea {
+    padding: .6rem .9rem; border: 2px solid #ddd; border-radius: 9px; font-size: .93rem;
+    transition: border-color .2s; font-family: inherit; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: var(--bleu); box-shadow: 0 0 0 3px rgba(26,77,184,.1); }
+
+.qty-wrap { display: flex; flex-direction: column; gap: .4rem; }
+.qty-num { font-size: 2rem; font-weight: 800; color: var(--marine); text-align: center; line-height: 1; }
+.qty-wrap input[type=range] { accent-color: var(--bleu); }
+
+/* Aperçu */
+.preview-recu {
+    background: linear-gradient(135deg, #f5f8ff, #eef3ff);
+    border: 2px solid #c5d3f5; border-radius: 12px;
+    padding: 1.2rem 2rem; margin: 1rem 0; }
+.preview-recu .pr-header { font-size: .78rem; color: #888; text-align: center; margin-bottom: .4rem; }
+.preview-recu .pr-num { font-size: 1.3rem; font-weight: 800; color: var(--marine);
+    letter-spacing: 1px; text-align: center; }
+.preview-recu .pr-sub { font-size: .8rem; color: #666; text-align: center; margin-top: .3rem; }
+
+.btn-gen { padding: .8rem 1.8rem; border: none; border-radius: 10px; font-size: .95rem;
+    font-weight: 700; cursor: pointer; transition: all .2s;
+    display: inline-flex; align-items: center; gap: .5rem; }
+.btn-gen.primary { background: var(--bleu); color: white; }
+.btn-gen.primary:hover { background: var(--marine); }
+.btn-gen.success { background: #198754; color: white; }
+.btn-gen.success:hover { background: #146c43; }
+
+/* Lots table */
+.lots-table { width: 100%; border-collapse: collapse; }
+.lots-table th { background: var(--marine); color: white; padding: .6rem 1rem; text-align: left; font-size: .82rem; }
+.lots-table td { padding: .65rem 1rem; border-bottom: 1px solid #eee; font-size: .87rem; }
+.lots-table tr:hover td { background: #f5f8ff; }
+.prog-bar { background: #e0e8f5; border-radius: 20px; height: 8px; width: 80px;
+    overflow: hidden; display: inline-block; vertical-align: middle; margin-left: .5rem; }
+.prog-fill { background: #198754; height: 100%; border-radius: 20px; }
+.badge-lot { padding: .15rem .55rem; border-radius: 20px; font-size: .75rem;
+    font-weight: 700; background: #dbeafe; color: var(--bleu); }
+
+/* Historique */
+.hist-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+.hist-table th { background: #f0f4ff; color: var(--marine); padding: .5rem .8rem; font-weight: 700; text-align: left; }
+.hist-table td { padding: .5rem .8rem; border-bottom: 1px solid #f0f0f0; }
+.hist-table tr:hover td { background: #fafbff; }
+
+.btn-xs { padding: .25rem .65rem; border-radius: 5px; font-size: .78rem; border: none;
+    cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
+.btn-xs.blue { background: var(--bleu); color: white; }
+.btn-xs.red  { background: #dc3545; color: white; }
+
+/* Séparateur section */
+.section-sep { border: none; border-top: 1px solid #e8ecf5; margin: 1.2rem 0; }
+
+/* Ligne revue dans le tableau déjà-payé */
+.row-revue td { opacity: .5; }
+.row-revue td strong, .row-revue td a { color: #888 !important; }
+.badge-revue {
+    display: inline-flex; align-items: center; gap: .3rem;
+    background: #d1f0db; color: #166534; border: 1.5px solid #86efac;
+    border-radius: 20px; padding: .15rem .6rem; font-size: .75rem; font-weight: 700; }
+.btn-xs.green { background: #198754; color: white; }
+.btn-xs.grey  { background: #adb5bd; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="rec-hero">
+    <div>
+        <h2>🧾 Génération de Reçus de Paiement</h2>
+        <p>Reçus officiels UNILU — 4 par feuille A4 avec QR code unique à usage unique</p>
+    </div>
+    <a href="{{ url_for('bulletins_portail') }}" target="_blank"
+       style="background:rgba(255,255,255,.2);color:white;padding:.6rem 1.2rem;
+              border-radius:8px;text-decoration:none;font-weight:600;font-size:.88rem;">
+        🌐 Portail étudiant
+    </a>
+</div>
+
+<div class="panel" id="verifier-recu">
+    <h3>🔎 Vérifier un reçu</h3>
+    <p style="color:#666;font-size:.86rem;margin-top:0;">
+        Recherchez par numéro imprimé ou collez le contenu du QR code. Le résultat indique
+        si le reçu est encore disponible ou déjà utilisé, et par qui.
+    </p>
+    <form method="POST" action="{{ url_for('decanat_recus_verifier') }}"
+          style="display:flex;gap:.7rem;align-items:flex-end;flex-wrap:wrap;">
+        <div class="form-group" style="flex:1;min-width:260px;">
+            <label for="rechercheRecu">Référence ou QR</label>
+            <input type="text" id="rechercheRecu" name="recherche"
+                   placeholder="Ex. B1-RI-001-S2-26 ou /scan/CODE"
+                   value="{{ recherche or '' }}" required>
+        </div>
+        <button type="submit" class="btn-gen primary">🔎 Vérifier</button>
+    </form>
+</div>
+
+<!-- Stats -->
+<div class="stat-row">
+    <div class="stat-box c1">
+        <div class="snum">{{ total }}</div>
+        <div class="slbl">Reçus générés</div>
+    </div>
+    <div class="stat-box c2">
+        <div class="snum">{{ total_utilise }}</div>
+        <div class="slbl">Reçus utilisés</div>
+    </div>
+    <div class="stat-box c3">
+        <div class="snum">{{ total - total_utilise }}</div>
+        <div class="slbl">Reçus disponibles</div>
+    </div>
+    <div class="stat-box c4">
+        <div class="snum">{{ total_deja_paye_en_attente }}</div>
+        <div class="slbl">En attente – déjà payé</div>
+        {% if total_deja_paye_revus > 0 %}
+        <div style="font-size:.75rem;color:#aaa;margin-top:.3rem;">{{ total_deja_paye_revus }} revu{{ 's' if total_deja_paye_revus > 1 else '' }}</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Formulaire -->
+<div class="panel">
+    <h3>➕ Générer de nouveaux reçus</h3>
+
+    <!-- Six catégories de reçus, chacune avec son préfixe et son montant -->
+    <div style="display:flex;gap:.7rem;margin-bottom:1.2rem;flex-wrap:wrap;">
+        <button type="button" onclick="switchTab('bulletin')" id="tab_bulletin"
+                style="padding:.5rem 1.3rem;border:2px solid var(--marine);border-radius:8px;
+                       background:var(--marine);color:white;font-weight:700;cursor:pointer;font-size:.88rem;">
+             📘 Résultats session 1
+        </button>
+        <button type="button" onclick="switchTab('session_2')" id="tab_session_2"
+                style="padding:.5rem 1.3rem;border:2px solid #087f5b;border-radius:8px;
+                       background:white;color:#087f5b;font-weight:700;cursor:pointer;font-size:.88rem;">
+             📗 Résultats session 2
+        </button>
+        <button type="button" onclick="switchTab('recours')" id="tab_recours"
+                style="padding:.5rem 1.3rem;border:2px solid #c0392b;border-radius:8px;
+                       background:white;color:#c0392b;font-weight:700;cursor:pointer;font-size:.88rem;">
+            📝 Reçu Recours
+        </button>
+        <button type="button" onclick="switchTab('resultat_recours')" id="tab_resultat_recours"
+                style="padding:.5rem 1.3rem;border:2px solid #6f42c1;border-radius:8px;
+                       background:white;color:#6f42c1;font-weight:700;cursor:pointer;font-size:.88rem;">
+            🎓 Reçu Résultat recours
+        </button>
+        <button type="button" onclick="switchTab('recours_session_2')" id="tab_recours_session_2"
+                style="padding:.5rem 1.3rem;border:2px solid #7950f2;border-radius:8px;
+                       background:white;color:#7950f2;font-weight:700;cursor:pointer;font-size:.88rem;">
+            🎓 Résultats recours 2ème session
+        </button>
+        <button type="button" onclick="switchTab('recours_session_2_soumission')" id="tab_recours_session_2_soumission"
+                style="padding:.5rem 1.3rem;border:2px solid #d9480f;border-radius:8px;
+                       background:white;color:#d9480f;font-weight:700;cursor:pointer;font-size:.88rem;">
+            📝 Soumission recours 2ème session
+        </button>
+        <button type="button" onclick="switchTab('releve')" id="tab_releve"
+                style="padding:.5rem 1.3rem;border:2px solid #6f42c1;border-radius:8px;
+                       background:white;color:#6f42c1;font-weight:700;cursor:pointer;font-size:.88rem;">
+            📄 Relevés de cotes
+        </button>
+         <button type="button" onclick="switchTab('import')" id="tab_import"
+                 style="padding:.5rem 1.3rem;border:2px solid #7b3f00;border-radius:8px;
+                        background:white;color:#7b3f00;font-weight:700;cursor:pointer;font-size:.88rem;">
+             📥 Importer PDF vendu
+         </button>
+    </div>
+
+    <!-- ── Formulaire Bulletin ── -->
+    <div id="form_bulletin">
+    <form method="POST" id="genForm">
+        <input type="hidden" name="type_recu" id="bulletinTypeRecu" value="bulletin">
+        <!-- Ligne 1 : identification du lot -->
+        <div class="gen-grid">
+            <div class="form-group">
+                <label>Département</label>
+                <input type="text" name="dept" id="dept" value="RI" maxlength="10"
+                       placeholder="RI, SPA, SOC…" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>N° de Lot</label>
+                <input type="text" name="lot" id="lot" value="1" maxlength="5"
+                       placeholder="1, 2, A…" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>Semestre</label>
+                <select name="semestre" id="semestre" onchange="updatePreview()">
+                    <option value="S1">S1 – Premier semestre</option>
+                    <option value="S2" selected>S2 – Second semestre</option>
+                    <option value="ANN">ANN – Annuel</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Année (2 chiffres)</label>
+                <input type="text" name="annee" id="annee" value="26" maxlength="4"
+                       placeholder="26" oninput="updatePreview()">
+            </div>
+            <div class="form-group">
+                <label>Année complète</label>
+                <input type="text" name="annee_complete" id="annee_complete" value="2025-2026"
+                       placeholder="2025-2026" oninput="updatePreview()">
+            </div>
+        </div>
+
+        <hr class="section-sep">
+
+        <!-- Ligne 2 : montant -->
+        <div class="gen-grid">
+            <div class="form-group">
+                <label>Montant (en chiffres)</label>
+             <input type="text" name="montant" id="montant" value="5000 FC"
+                        placeholder="5000 FC" readonly>
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Montant en lettres</label>
+                <input type="text" name="montant_lettres" id="montant_lettres"
+                        value="Cinq mille Francs congolais" readonly
+                       placeholder="Cinq mille Francs congolais">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+                <label>Type de session</label>
+                <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:.3rem;">
+                    <label style="display:flex;align-items:center;gap:.5rem;font-weight:normal;
+                                  background:#f0f4ff;border:2px solid #c5d3f5;border-radius:9px;
+                                  padding:.55rem 1rem;cursor:pointer;font-size:.93rem;" id="lbl_s2">
+                        <input type="radio" name="type_session" value="Second semestre"
+                               checked onchange="updatePreview(); highlightType()">
+                        📘 Second semestre
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.5rem;font-weight:normal;
+                                  background:#f0f4ff;border:2px solid #c5d3f5;border-radius:9px;
+                                  padding:.55rem 1rem;cursor:pointer;font-size:.93rem;" id="lbl_rc">
+                        <input type="radio" name="type_session" value="Recours second semestre"
+                               onchange="updatePreview(); highlightType()">
+                        🔁 Recours second semestre
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <hr class="section-sep">
+
+        <!-- Quantité -->
+        <div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;margin-bottom:1rem;">
+            <div class="form-group qty-wrap">
+                <label>Quantité : <span class="qty-num" id="qtyDisplay">20</span></label>
+                <input type="range" name="quantite" id="quantite"
+                       min="4" max="500" value="20" step="4"
+                       oninput="document.getElementById('qtyDisplay').textContent=this.value; updatePreview()">
+                <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#aaa;">
+                    <span>4</span><span>500</span>
+                </div>
+            </div>
+
+            <div class="preview-recu">
+                <div class="pr-header">UNIVERSITE DE LUBUMBASHI<br>Faculté des Sc. Sociales, Politiques et Administrations</div>
+                <div class="pr-num" id="previewNum">B1-RI-001-S2-26</div>
+                <div class="pr-sub" id="previewSub">20 reçus • 5 pages A4 (4 reçus/page)</div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+            <button type="submit" name="action" value="generer_pdf" class="btn-gen success">
+                📄 Générer &amp; Télécharger le PDF
+            </button>
+            <button type="submit" name="action" value="generer" class="btn-gen primary">
+                💾 Enregistrer sans télécharger
+            </button>
+        </div>
+    </form>
+    </div><!-- /form_bulletin -->
+
+    <!-- ── Formulaire Relevé de cotes ── -->
+    <div id="form_releve" style="display:none;">
+        <div style="background:#f3edff;border:1.5px solid #c9b6f2;border-radius:10px;
+                    padding:.8rem 1.1rem;margin-bottom:1.2rem;font-size:.83rem;color:#42206f;">
+            📄 <strong>Reçus de relevé de cotes</strong> — Les étudiants présenteront un reçu
+            <strong>REL-</strong> pour enregistrer leur commande. Le montant est fixé par le DÉCANAT.
+        </div>
+        <form method="POST">
+            <input type="hidden" name="type_recu" value="releve">
+            <input type="hidden" name="lot" value="0">
+            <input type="hidden" name="semestre" value="ANN">
+            <input type="hidden" name="type_session" value="Commande de relevé de cotes">
+            <div class="gen-grid">
+                <div class="form-group">
+                    <label>Département / Abréviation</label>
+                    <input type="text" name="dept" value="SC" maxlength="10" required>
+                </div>
+                <div class="form-group">
+                    <label>Année (2 chiffres)</label>
+                    <input type="text" name="annee" value="26" maxlength="4" required>
+                </div>
+                <div class="form-group">
+                    <label>Année complète</label>
+                    <input type="text" name="annee_complete" value="2025-2026" required>
+                </div>
+                <div class="form-group">
+                    <label>Montant</label>
+                    <input type="text" name="montant" placeholder="Ex. 10000 FC" required>
+                </div>
+                <div class="form-group">
+                    <label>Montant en lettres</label>
+                    <input type="text" name="montant_lettres"
+                           placeholder="Montant écrit en lettres" required>
+                </div>
+                <div class="form-group">
+                    <label>Quantité</label>
+                    <input type="number" name="quantite" value="20" min="1" max="500" required>
+                </div>
+            </div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <button type="submit" name="action" value="generer_pdf" class="btn-gen success">
+                    📄 Générer les reçus REL- en PDF
+                </button>
+                <button type="submit" name="action" value="generer" class="btn-gen primary">
+                    💾 Enregistrer sans télécharger
+                </button>
+            </div>
+        </form>
+    </div><!-- /form_releve -->
+
+    <!-- ══ Formulaire Reçu Recours ══ -->
+    <div id="form_recours" style="display:none;">
+        <div style="background:#fff0f0;border:1.5px solid #f5aaaa;border-radius:10px;
+                    padding:.8rem 1.1rem;margin-bottom:1.2rem;font-size:.83rem;color:#6b1313;">
+            📝 <strong>Reçus de Recours</strong> — Ces reçus sont délivrés aux étudiants qui paient les frais de recours.
+            Chaque reçu a un QR code unique valable pour soumettre un seul formulaire de recours.<br>
+            Montant fixe : <strong>10 USD</strong> · Session : <strong>Second semestre 2025-2026</strong>
+        </div>
+        <form method="POST" id="genRecoursForm">
+            <input type="hidden" name="type_recu" value="recours">
+            <input type="hidden" name="semestre" value="S2">
+            <input type="hidden" name="lot" value="0">
+            <input type="hidden" name="annee_complete" value="2025-2026">
+            <input type="hidden" name="montant" value="10 USD">
+            <input type="hidden" name="montant_lettres" value="Dix Dollars américains">
+            <input type="hidden" name="type_session" value="Second semestre 2025-2026">
+            <div class="gen-grid">
+                <div class="form-group">
+                    <label>Département / Abréviation</label>
+                    <input type="text" name="dept" id="rc_dept" value="SC" maxlength="10"
+                           placeholder="SC, RI, SOC…" oninput="updateRecoursPreview()">
+                </div>
+                <div class="form-group">
+                    <label>Année (2 chiffres)</label>
+                    <input type="text" name="annee" id="rc_annee" value="26" maxlength="4"
+                           placeholder="26" oninput="updateRecoursPreview()">
+                </div>
+                <div class="form-group" style="grid-column:span 3;">
+                    <label style="color:#888;font-weight:400;">Montant &amp; Session (fixes)</label>
+                    <div style="background:#f5f5f5;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;color:#555;">
+                        💵 10 USD — Dix Dollars américains &nbsp;·&nbsp; Session : Second semestre 2025-2026
+                    </div>
+                </div>
+            </div>
+            <hr class="section-sep">
+            <div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;margin-bottom:1rem;">
+                <div class="form-group qty-wrap">
+                    <label>Quantité : <span class="qty-num" id="rcQtyDisplay">20</span></label>
+                    <input type="range" name="quantite" id="rc_quantite"
+                           min="4" max="500" value="20" step="4"
+                           oninput="document.getElementById('rcQtyDisplay').textContent=this.value; updateRecoursPreview()">
+                    <div style="display:flex;justify-content:space-between;font-size:.72rem;color:#aaa;">
+                        <span>4</span><span>500</span>
+                    </div>
+                </div>
+                <div class="preview-recu">
+                    <div class="pr-header">UNIVERSITE DE LUBUMBASHI<br>Faculté des Sc. Sociales — RECOURS</div>
+                    <div class="pr-num" id="rcPreviewNum" style="color:#c0392b;">RS-SC-001-S2-26</div>
+                    <div class="pr-sub" id="rcPreviewSub">20 reçus • 5 pages A4 (4 reçus/page)</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <button type="submit" name="action" value="generer_pdf" class="btn-gen success"
+                        style="background:#c0392b;">
+                    📄 Générer &amp; Télécharger le PDF (Recours)
+                </button>
+                <button type="submit" name="action" value="generer" class="btn-gen primary">
+                    💾 Enregistrer sans télécharger
+                </button>
+            </div>
+        </form>
+    </div><!-- /form_recours -->
+
+    <!-- ══ Formulaire Reçu Résultat de recours ══ -->
+    <div id="form_resultat_recours" style="display:none;">
+        <div style="background:#f5efff;border:1.5px solid #c9a9ef;border-radius:10px;
+                    padding:.8rem 1.1rem;margin-bottom:1.2rem;font-size:.83rem;color:#4b2675;">
+            🎓 <strong>Reçus de consultation du résultat de recours</strong> —
+            Ces reçus débloquent uniquement les bulletins issus d’une grille de recours.
+            Ils ne peuvent pas soumettre un recours.<br>
+             Préfixe : <strong>RR-</strong> · Montant fixe : <strong>5000 FC</strong>
+        </div>
+        <form method="POST" id="genResultatRecoursForm">
+            <input type="hidden" name="type_recu" value="resultat_recours">
+            <input type="hidden" name="semestre" value="S2">
+            <input type="hidden" name="lot" value="0">
+            <input type="hidden" name="annee_complete" value="2025-2026">
+            <input type="hidden" name="montant" value="5000 FC">
+            <input type="hidden" name="montant_lettres" value="Cinq mille Francs congolais">
+            <input type="hidden" name="type_session" value="Second semestre 2025-2026">
+            <div class="gen-grid">
+                <div class="form-group">
+                    <label>Département / Abréviation</label>
+                    <input type="text" name="dept" id="rr_dept" value="SC" maxlength="10"
+                           placeholder="SC, RI, SOC…" oninput="updateResultatRecoursPreview()">
+                </div>
+                <div class="form-group">
+                    <label>Année (2 chiffres)</label>
+                    <input type="text" name="annee" id="rr_annee" value="26" maxlength="4"
+                           placeholder="26" oninput="updateResultatRecoursPreview()">
+                </div>
+                <div class="form-group" style="grid-column:span 3;">
+                    <label style="color:#888;font-weight:400;">Montant &amp; usage (fixes)</label>
+                    <div style="background:#f5f5f5;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;color:#555;">
+                         💵 5000 FC — Résultats du recours session 1 · Reçu à usage unique
+                    </div>
+                </div>
+            </div>
+            <hr class="section-sep">
+            <div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;margin-bottom:1rem;">
+                <div class="form-group qty-wrap">
+                    <label>Quantité : <span class="qty-num" id="rrQtyDisplay">20</span></label>
+                    <input type="range" name="quantite" id="rr_quantite"
+                           min="4" max="500" value="20" step="4"
+                           oninput="document.getElementById('rrQtyDisplay').textContent=this.value; updateResultatRecoursPreview()">
+                </div>
+                <div class="preview-recu">
+                    <div class="pr-header">UNIVERSITE DE LUBUMBASHI<br>Résultat de recours</div>
+                    <div class="pr-num" id="rrPreviewNum" style="color:#6f42c1;">RR-SC-001-S2-26</div>
+                    <div class="pr-sub" id="rrPreviewSub">20 reçus • 5 pages A4 (4 reçus/page)</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <button type="submit" name="action" value="generer_pdf" class="btn-gen success"
+                        style="background:#6f42c1;">
+                    📄 Générer &amp; Télécharger le PDF (RR)
+                </button>
+                <button type="submit" name="action" value="generer" class="btn-gen primary">
+                    💾 Enregistrer sans télécharger
+                </button>
+            </div>
+        </form>
+    </div><!-- /form_resultat_recours -->
+
+    <!-- ══ Formulaire Soumission recours 2ème session ══ -->
+    <div id="form_recours_session_2_soumission" style="display:none;">
+        <div style="background:#fff4e6;border:1.5px solid #ffa94d;border-radius:10px;
+                    padding:.8rem 1.1rem;margin-bottom:1.2rem;font-size:.83rem;color:#7c2d12;">
+            📝 <strong>Soumission recours session 2</strong> —
+            ce reçu à usage unique permet de soumettre un recours de 2ème session.<br>
+            Préfixe : <strong>RS2-</strong> · Montant fixe : <strong>10 USD</strong>
+        </div>
+        <form method="POST" id="genRecoursSession2SoumissionForm">
+            <input type="hidden" name="type_recu" value="recours_session_2_soumission">
+            <input type="hidden" name="semestre" value="S2">
+            <input type="hidden" name="lot" value="0">
+            <input type="hidden" name="annee_complete" value="2025-2026">
+            <input type="hidden" name="montant" value="10 USD">
+            <input type="hidden" name="montant_lettres" value="Dix Dollars américains">
+            <input type="hidden" name="type_session" value="Recours 2ème session 2025-2026">
+            <div class="gen-grid">
+                <div class="form-group">
+                    <label>Département / Abréviation</label>
+                    <input type="text" name="dept" id="rs2_dept" value="SC" maxlength="10"
+                           oninput="updateRS2Preview()">
+                </div>
+                <div class="form-group">
+                    <label>Année (2 chiffres)</label>
+                    <input type="text" name="annee" id="rs2_annee" value="26" maxlength="4"
+                           oninput="updateRS2Preview()">
+                </div>
+                <div class="form-group" style="grid-column:span 3;">
+                    <label style="color:#888;font-weight:400;">Montant &amp; usage (fixes)</label>
+                    <div style="background:#f5f5f5;border-radius:6px;padding:.5rem .8rem;font-size:.85rem;color:#555;">
+                        💵 10 USD — Soumission recours session 2 · Reçu à usage unique
+                    </div>
+                </div>
+            </div>
+            <hr class="section-sep">
+            <div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;margin-bottom:1rem;">
+                <div class="form-group qty-wrap">
+                    <label>Quantité : <span class="qty-num" id="rs2QtyDisplay">20</span></label>
+                    <input type="range" name="quantite" id="rs2_quantite" min="4" max="500"
+                           value="20" step="4"
+                           oninput="document.getElementById('rs2QtyDisplay').textContent=this.value; updateRS2Preview()">
+                </div>
+                <div class="preview-recu">
+                    <div class="pr-header">UNIVERSITE DE LUBUMBASHI<br>Soumission recours session 2</div>
+                    <div class="pr-num" id="rs2PreviewNum" style="color:#d9480f;">RS2-SC-001-S2-26</div>
+                    <div class="pr-sub" id="rs2PreviewSub">20 reçus • 5 pages A4 (4 reçus/page) • 10 USD</div>
+                </div>
+            </div>
+            <button type="submit" name="action" value="generer_pdf" class="btn-gen success"
+                    style="background:#d9480f;">📄 Générer &amp; Télécharger le PDF (RS2)</button>
+            <button type="submit" name="action" value="generer" class="btn-gen primary">
+                💾 Enregistrer sans télécharger
+            </button>
+        </form>
+    </div><!-- /form_recours_session_2_soumission -->
+
+    <!-- ══ Formulaire Reçu résultats de recours 2ème session ══ -->
+    <div id="form_recours_session_2" style="display:none;">
+        <div style="background:#f3f0ff;border:1.5px solid #b197fc;border-radius:10px;
+                    padding:.8rem 1.1rem;margin-bottom:1.2rem;font-size:.83rem;color:#402080;">
+            🎓 <strong>Résultat de recours de 2ème session</strong> —
+            ce reçu débloque uniquement une grille <em>recours_session_2</em>.
+            Il ne débloque ni la 1ère session ni le recours de 1ère session.<br>
+             Préfixe : <strong>R2-</strong> · Montant fixe : <strong>5000 FC</strong>
+        </div>
+        <form method="POST" id="genRecoursSession2Form">
+            <input type="hidden" name="type_recu" value="recours_session_2">
+            <input type="hidden" name="semestre" value="S2">
+            <input type="hidden" name="lot" value="0">
+            <input type="hidden" name="annee_complete" value="2025-2026">
+            <input type="hidden" name="montant" value="5000 FC">
+            <input type="hidden" name="montant_lettres" value="Cinq mille Francs congolais">
+            <input type="hidden" name="type_session" value="Recours 2ème session 2025-2026">
+            <div class="gen-grid">
+                <div class="form-group">
+                    <label>Département / Abréviation</label>
+                    <input type="text" name="dept" id="r2_dept" value="SC" maxlength="10"
+                           oninput="updateR2Preview()">
+                </div>
+                <div class="form-group">
+                    <label>Année (2 chiffres)</label>
+                    <input type="text" name="annee" id="r2_annee" value="26" maxlength="4"
+                           oninput="updateR2Preview()">
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start;margin-bottom:1rem;">
+                <div class="form-group qty-wrap">
+                    <label>Quantité : <span class="qty-num" id="r2QtyDisplay">20</span></label>
+                    <input type="range" name="quantite" id="r2_quantite" min="4" max="500"
+                           value="20" step="4"
+                           oninput="document.getElementById('r2QtyDisplay').textContent=this.value; updateR2Preview()">
+                </div>
+                <div class="preview-recu">
+                    <div class="pr-header">UNIVERSITE DE LUBUMBASHI<br>Résultats du recours session 2</div>
+                    <div class="pr-num" id="r2PreviewNum" style="color:#7950f2;">R2-SC-001-S2-26</div>
+                    <div class="pr-sub" id="r2PreviewSub">20 reçus • 5 pages A4 (4 reçus/page)</div>
+                </div>
+            </div>
+            <button type="submit" name="action" value="generer_pdf" class="btn-gen success"
+                    style="background:#7950f2;">📄 Générer &amp; Télécharger le PDF (R2)</button>
+            <button type="submit" name="action" value="generer" class="btn-gen primary">
+                💾 Enregistrer sans télécharger
+            </button>
+        </form>
+    </div><!-- /form_recours_session_2 -->
+
+     <!-- ══ Import de reçus déjà imprimés/vendus ══ -->
+     <div id="form_import" style="display:none;">
+         <div style="background:#fff8e8;border:1.5px solid #e3b341;border-radius:10px;
+                     padding:1rem 1.1rem;margin-bottom:1.2rem;font-size:.88rem;color:#654600;">
+             📥 <strong>Reçus déjà imprimés et vendus</strong><br>
+             Importez le PDF officiel contenant leurs numéros et leurs QR codes.
+             L’application les reconnaîtra comme reçus valides pour l’accès au bulletin.
+             Chaque reçu sera <strong>disponible mais non utilisé</strong> et sera consommé
+             définitivement au premier scan valide.
+         </div>
+         <form method="POST" action="{{ url_for('decanat_recus_import_pdf') }}"
+               enctype="multipart/form-data"
+               onsubmit="return confirm('Importer ces reçus comme reçus officiels à usage unique ?\\n\\nUn reçu déjà utilisé restera utilisé et les doublons seront ignorés.')">
+             <div class="form-group" style="max-width:720px;">
+                 <label for="recus_pdf">PDF des reçus déjà vendus</label>
+                 <input type="file" id="recus_pdf" name="recus_pdf" accept="application/pdf"
+                        required style="padding:.65rem;border:1px solid #d7c58e;border-radius:8px;
+                        width:100%;background:#fff;">
+             </div>
+             <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+                 <button type="submit" class="btn-gen" style="background:#7b3f00;color:white;">
+                     📥 Importer et activer les reçus
+                 </button>
+                 <span style="font-size:.8rem;color:#777;">
+                     QR obligatoire · aucun nouveau QR ne sera généré · import atomique
+                 </span>
+             </div>
+         </form>
+     </div><!-- /form_import -->
+</div>
+
+<!-- Lots existants -->
+<div class="panel">
+    <h3>📂 Lots générés</h3>
+    {% if lots %}
+    <table class="lots-table">
+        <thead>
+            <tr>
+                <th>Lot</th>
+                <th>Département</th>
+                <th>Année</th>
+                <th>Total</th>
+                <th>Utilisés</th>
+                <th>Progression</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for lot_row in lots %}
+            {% set pct = ((lot_row.nb_util or 0) / lot_row.nb * 100) | int if lot_row.nb else 0 %}
+            <tr>
+                <td><span class="badge-lot">Lot {{ lot_row.lot }}</span></td>
+                <td><strong>{{ lot_row.dept }}</strong></td>
+                <td>20{{ lot_row.annee }}</td>
+                <td><strong>{{ lot_row.nb }}</strong></td>
+                <td style="color:#198754;font-weight:700;">{{ lot_row.nb_util or 0 }}</td>
+                <td>
+                    <span style="font-size:.78rem;color:#888;">{{ pct }}%</span>
+                    <span class="prog-bar">
+                        <span class="prog-fill" style="width:{{ pct }}%;"></span>
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:.4rem;">
+                        <form method="POST" action="{{ url_for('decanat_recus_lot_pdf') }}" style="display:inline">
+                            <input type="hidden" name="lot" value="{{ lot_row.lot }}">
+                            <input type="hidden" name="dept" value="{{ lot_row.dept }}">
+                            <button type="submit" class="btn-xs blue">⬇ PDF</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('decanat_recus_supprimer_lot') }}" style="display:inline"
+                              onsubmit="return confirm('Supprimer les reçus NON utilisés de ce lot ?')">
+                            <input type="hidden" name="lot" value="{{ lot_row.lot }}">
+                            <input type="hidden" name="dept" value="{{ lot_row.dept }}">
+                            <button type="submit" class="btn-xs red">🗑 Inutilisés</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center;color:#888;padding:2rem;">Aucun lot généré pour l'instant.</p>
+    {% endif %}
+</div>
+
+<!-- Historique scans -->
+<div class="panel">
+    <h3>📡 Reçus scannés récemment ({{ recus_recents | length }})</h3>
+    {% if recus_recents %}
+    <table class="hist-table">
+        <thead>
+            <tr><th>N° Reçu</th><th>Matricule</th><th>Nom étudiant</th><th>Date scan</th><th>Bulletin</th></tr>
+        </thead>
+        <tbody>
+        {% for r in recus_recents %}
+            <tr>
+                <td><strong>{{ r.numero }}</strong></td>
+                <td>{{ r.matricule_etudiant or '—' }}</td>
+                <td>{{ r.nom_etudiant or '—' }}</td>
+                <td style="color:#666;font-size:.82rem;">
+                    {{ r.date_utilisation.strftime('%d/%m/%Y %H:%M') if r.date_utilisation else '—' }}
+                </td>
+                <td>
+                    {% if r.bulletin_id %}✅{% else %}—{% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center;color:#888;padding:1.5rem;">Aucun reçu scanné pour l'instant.</p>
+    {% endif %}
+</div>
+
+<!-- Reçus présentés sur un bulletin déjà payé -->
+<div class="panel" id="section-deja-paye">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:.5rem;">
+        <h3 style="margin:0;">⚠️ Reçus présentés sur un bulletin déjà payé ({{ recus_deja_paye | length }})</h3>
+        {% if recus_deja_paye %}
+        <button id="btnToggleRevues" onclick="toggleRevues()"
+                style="padding:.4rem 1rem;border-radius:8px;border:2px solid #1a4db8;
+                       background:#f0f4ff;color:#1a4db8;font-weight:700;font-size:.83rem;
+                       cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;">
+            <span id="btnToggleIcon">👁</span>
+            <span id="btnToggleLabel">Afficher les cas revus</span>
+        </button>
+        {% endif %}
+    </div>
+    <p style="font-size:.85rem;color:#666;margin-top:.4rem;margin-bottom:1rem;">
+        Ces reçus <strong>n'ont pas été consommés</strong> — l'étudiant avait déjà payé son bulletin
+        par une autre méthode. Ils restent valides et réutilisables.
+        Cliquez sur <strong>Marquer revu</strong> pour archiver les cas déjà traités.
+    </p>
+    {% if recus_deja_paye %}
+    <p id="msgToutRevu" style="display:none;text-align:center;color:#888;padding:.8rem;
+                                background:#f8f9fa;border-radius:8px;font-size:.88rem;">
+        ✅ Tous les cas ont été marqués comme revus. Cliquez sur « Afficher les cas revus » pour les voir.
+    </p>
+    <table class="hist-table" id="tableDejaPayeWrapper">
+        <thead>
+            <tr>
+                <th>N° Reçu</th>
+                <th>Lot / Dépt</th>
+                <th>Matricule</th>
+                <th>Nom de l'étudiant</th>
+                <th>Statut</th>
+                <th>Bulletin ciblé</th>
+                <th>Date présentation</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in recus_deja_paye %}
+            <tr class="{{ 'row-revue' if r.tentative_revue else '' }}">
+                <td><strong>{{ r.numero }}</strong></td>
+                <td>Lot {{ r.lot }} &nbsp;·&nbsp; {{ r.dept }}</td>
+                <td style="font-family:monospace;font-size:.85rem;">{{ r.tentative_matricule or '—' }}</td>
+                <td><strong>{{ r.tentative_nom or '—' }}</strong></td>
+                <td>
+                    {% if r.tentative_revue %}
+                    <span class="badge-revue">✅ Revu</span>
+                    {% else %}
+                    <span class="badge-deja-paye">⚠️ Présenté – déjà payé</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.tentative_bulletin_id %}
+                    <a href="{{ url_for('bulletins_result', bid=r.tentative_bulletin_id) }}"
+                       style="color:var(--bleu);font-weight:600;text-decoration:none;"
+                       target="_blank">
+                        #{{ r.tentative_bulletin_id }} ↗
+                    </a>
+                    {% else %}—{% endif %}
+                </td>
+                <td style="color:#666;font-size:.82rem;">
+                    {{ r.date_tentative.strftime('%d/%m/%Y %H:%M') if r.date_tentative else '—' }}
+                </td>
+                <td>
+                    <form method="POST"
+                          action="{{ url_for('decanat_recus_marquer_revue', recu_id=r.id) }}"
+                          style="display:inline;">
+                        <button type="submit"
+                                class="btn-xs {{ 'grey' if r.tentative_revue else 'green' }}"
+                                title="{{ 'Annuler la revue' if r.tentative_revue else 'Marquer comme revu' }}">
+                            {{ '↩ Annuler' if r.tentative_revue else '✔ Marquer revu' }}
+                        </button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="text-align:center;color:#888;padding:1.5rem;">Aucun reçu de ce type détecté pour l'instant.</p>
+    {% endif %}
+</div>
+
+<script>
+/* ── Filtre "cas revus" dans le tableau déjà-payé ── */
+const _FILTER_KEY = 'decanat_recus_show_revues';
+let _showRevues = (sessionStorage.getItem(_FILTER_KEY) === '1');
+
+function applyRevuesFilter() {
+  const rows = document.querySelectorAll('#tableDejaPayeWrapper tbody tr.row-revue');
+  rows.forEach(function(tr) {
+    tr.style.display = _showRevues ? '' : 'none';
+  });
+
+  const btn   = document.getElementById('btnToggleRevues');
+  const icon  = document.getElementById('btnToggleIcon');
+  const label = document.getElementById('btnToggleLabel');
+  const msg   = document.getElementById('msgToutRevu');
+
+  if (!btn) return;
+
+  if (_showRevues) {
+    icon.textContent  = '🙈';
+    label.textContent = 'Masquer les cas revus';
+    btn.style.background   = '#d1f0db';
+    btn.style.borderColor  = '#86efac';
+    btn.style.color        = '#166534';
+    if (msg) msg.style.display = 'none';
+  } else {
+    icon.textContent  = '👁';
+    label.textContent = 'Afficher les cas revus';
+    btn.style.background   = '#f0f4ff';
+    btn.style.borderColor  = '#1a4db8';
+    btn.style.color        = '#1a4db8';
+
+    // Si toutes les lignes visibles sont zero, montrer le message explicatif
+    if (msg) {
+      const allRows = document.querySelectorAll('#tableDejaPayeWrapper tbody tr');
+      const visibleRows = document.querySelectorAll('#tableDejaPayeWrapper tbody tr:not(.row-revue)');
+      msg.style.display = (allRows.length > 0 && visibleRows.length === 0) ? 'block' : 'none';
+    }
+  }
+}
+
+function toggleRevues() {
+  _showRevues = !_showRevues;
+  sessionStorage.setItem(_FILTER_KEY, _showRevues ? '1' : '0');
+  applyRevuesFilter();
+}
+
+// Appliquer le filtre au chargement (masquer les revus par défaut)
+document.addEventListener('DOMContentLoaded', function() {
+  applyRevuesFilter();
+});
+
+const LETTRES_MAP = {
+  '1000': 'Mille Francs congolais',
+  '2000': 'Deux mille Francs congolais',
+  '2500': 'Deux mille cinq cents Francs congolais',
+  '3000': 'Trois mille Francs congolais',
+  '4000': 'Quatre mille Francs congolais',
+  '5000': 'Cinq mille Francs congolais',
+  '7500': 'Sept mille cinq cents Francs congolais',
+  '10000': 'Dix mille Francs congolais',
+  '15000': 'Quinze mille Francs congolais',
+  '20000': 'Vingt mille Francs congolais',
+};
+function updateLettres() {
+  const v = document.getElementById('montant').value.replace(/[^\d]/g,'');
+  const el = document.getElementById('montant_lettres');
+  if (LETTRES_MAP[v]) el.value = LETTRES_MAP[v];
+}
+
+function highlightType() {
+  const s2 = document.querySelector('input[name="type_session"][value="Second semestre"]');
+  document.getElementById('lbl_s2').style.borderColor = s2.checked ? '#1a4db8' : '#c5d3f5';
+  document.getElementById('lbl_s2').style.background  = s2.checked ? '#dbeafe' : '#f0f4ff';
+  document.getElementById('lbl_rc').style.borderColor = s2.checked ? '#c5d3f5' : '#1a4db8';
+  document.getElementById('lbl_rc').style.background  = s2.checked ? '#f0f4ff' : '#dbeafe';
+}
+highlightType();
+
+function updatePreview() {
+  const dept  = (document.getElementById('dept').value.trim().toUpperCase()) || 'DEPT';
+  const lot   = document.getElementById('lot').value.trim() || '1';
+  const annee = document.getElementById('annee').value.trim() || '26';
+  const sem   = document.getElementById('semestre').value || 'S2';
+  const qty   = parseInt(document.getElementById('quantite').value) || 20;
+  const receiptType = document.getElementById('bulletinTypeRecu')?.value || 'bulletin';
+  const first = receiptType === 'session_2'
+    ? `S2-${dept}-001-${sem}-${annee}`
+    : `B${lot}-${dept}-001-${sem}-${annee}`;
+  const pages = Math.ceil(qty / 4);
+  const typeSelected = document.querySelector('input[name="type_session"]:checked');
+  const typeLabel = typeSelected ? typeSelected.value : 'Second semestre';
+  document.getElementById('previewNum').textContent = first;
+  document.getElementById('previewSub').textContent =
+    `${qty} reçus  •  ${pages} page${pages>1?'s':''} A4 (4 reçus/page)  •  ${typeLabel}`;
+}
+updatePreview();
+
+function updateRecoursPreview() {
+  const dept  = (document.getElementById('rc_dept').value.trim().toUpperCase()) || 'SC';
+  const annee = document.getElementById('rc_annee').value.trim() || '26';
+  const qty   = parseInt(document.getElementById('rc_quantite').value) || 20;
+  const pages = Math.ceil(qty / 4);
+  document.getElementById('rcPreviewNum').textContent = `RS-${dept}-001-S2-${annee}`;
+  document.getElementById('rcPreviewSub').textContent =
+    `${qty} reçus  •  ${pages} page${pages>1?'s':''} A4 (4 reçus/page)  •  10 USD`;
+}
+updateRecoursPreview();
+
+function updateResultatRecoursPreview() {
+  const dept = (document.getElementById('rr_dept').value.trim().toUpperCase()) || 'SC';
+  const annee = document.getElementById('rr_annee').value.trim() || '26';
+  const qty = parseInt(document.getElementById('rr_quantite').value) || 20;
+  const pages = Math.ceil(qty / 4);
+  document.getElementById('rrPreviewNum').textContent = `RR-${dept}-001-S2-${annee}`;
+  document.getElementById('rrPreviewSub').textContent =
+    `${qty} reçus • ${pages} page${pages > 1 ? 's' : ''} A4 (4 reçus/page) • 5000 FC`;
+}
+updateResultatRecoursPreview();
+
+function updateRS2Preview() {
+  const dept = (document.getElementById('rs2_dept').value.trim().toUpperCase()) || 'SC';
+  const annee = document.getElementById('rs2_annee').value.trim() || '26';
+  const qty = parseInt(document.getElementById('rs2_quantite').value) || 20;
+  const pages = Math.ceil(qty / 4);
+  document.getElementById('rs2PreviewNum').textContent = `RS2-${dept}-001-S2-${annee}`;
+  document.getElementById('rs2PreviewSub').textContent =
+    `${qty} reçus • ${pages} page${pages > 1 ? 's' : ''} A4 (4 reçus/page) • 10 USD`;
+}
+updateRS2Preview();
+
+function updateR2Preview() {
+  const dept = (document.getElementById('r2_dept').value.trim().toUpperCase()) || 'SC';
+  const annee = document.getElementById('r2_annee').value.trim() || '26';
+  const qty = parseInt(document.getElementById('r2_quantite').value) || 20;
+  const pages = Math.ceil(qty / 4);
+  document.getElementById('r2PreviewNum').textContent = `R2-${dept}-001-S2-${annee}`;
+  document.getElementById('r2PreviewSub').textContent =
+    `${qty} reçus • ${pages} page${pages > 1 ? 's' : ''} A4 (4 reçus/page) • 5000 FC`;
+}
+updateR2Preview();
+
+function switchTab(tab) {
+  const isBulletin = (tab === 'bulletin');
+  const isSession2 = (tab === 'session_2');
+   const isRecours = (tab === 'recours');
+  const isResultatRecours = (tab === 'resultat_recours');
+  const isRecoursSession2 = (tab === 'recours_session_2');
+  const isRecoursSession2Soumission = (tab === 'recours_session_2_soumission');
+  const isReleve = (tab === 'releve');
+   const isImport = (tab === 'import');
+  document.getElementById('form_bulletin').style.display = (isBulletin || isSession2) ? '' : 'none';
+  document.getElementById('form_releve').style.display = isReleve ? '' : 'none';
+  document.getElementById('form_recours_session_2').style.display = isRecoursSession2 ? '' : 'none';
+  document.getElementById('form_recours_session_2_soumission').style.display =
+      isRecoursSession2Soumission ? '' : 'none';
+   document.getElementById('form_recours').style.display  = isRecours ? '' : 'none';
+  document.getElementById('form_resultat_recours').style.display = isResultatRecours ? '' : 'none';
+   document.getElementById('form_import').style.display   = isImport ? '' : 'none';
+  if (isBulletin || isSession2) {
+    document.getElementById('bulletinTypeRecu').value = isSession2 ? 'session_2' : 'bulletin';
+    updatePreview();
+  }
+  document.getElementById('tab_bulletin').style.background = isBulletin ? 'var(--marine)' : 'white';
+  document.getElementById('tab_bulletin').style.color      = isBulletin ? 'white' : 'var(--marine)';
+   document.getElementById('tab_session_2').style.background = isSession2 ? '#087f5b' : 'white';
+   document.getElementById('tab_session_2').style.color = isSession2 ? 'white' : '#087f5b';
+   document.getElementById('tab_recours').style.background  = isRecours ? '#c0392b' : 'white';
+   document.getElementById('tab_recours').style.color       = isRecours ? 'white' : '#c0392b';
+  document.getElementById('tab_resultat_recours').style.background =
+      isResultatRecours ? '#6f42c1' : 'white';
+  document.getElementById('tab_resultat_recours').style.color =
+      isResultatRecours ? 'white' : '#6f42c1';
+  document.getElementById('tab_recours_session_2').style.background =
+      isRecoursSession2 ? '#7950f2' : 'white';
+  document.getElementById('tab_recours_session_2').style.color =
+      isRecoursSession2 ? 'white' : '#7950f2';
+  document.getElementById('tab_recours_session_2_soumission').style.background =
+      isRecoursSession2Soumission ? '#d9480f' : 'white';
+  document.getElementById('tab_recours_session_2_soumission').style.color =
+      isRecoursSession2Soumission ? 'white' : '#d9480f';
+  document.getElementById('tab_releve').style.background = isReleve ? '#6f42c1' : 'white';
+  document.getElementById('tab_releve').style.color = isReleve ? 'white' : '#6f42c1';
+   document.getElementById('tab_import').style.background   = isImport ? '#7b3f00' : 'white';
+   document.getElementById('tab_import').style.color        = isImport ? 'white' : '#7b3f00';
+}
+</script>
+{% endblock %}

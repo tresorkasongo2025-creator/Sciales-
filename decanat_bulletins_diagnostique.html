@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Diagnostic Grille – DECANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+.diag-hero { background: linear-gradient(135deg, #6f42c1 0%, #0d2666 100%);
+    color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+.diag-hero h2 { margin: 0 0 .4rem; font-size: 1.6rem; }
+.panel { background: white; border-radius: 12px; padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 1.5rem; }
+.panel h3 { margin-top: 0; color: #0d2666; border-bottom: 2px solid #e8ecf0;
+    padding-bottom: .6rem; }
+.raw-table { width: 100%; border-collapse: collapse; font-size: .78rem;
+    font-family: monospace; overflow-x: auto; display: block; }
+.raw-table th { background: #6f42c1; color: white; padding: .4rem .6rem; }
+.raw-table td { padding: .35rem .6rem; border: 1px solid #ddd; vertical-align: top;
+    max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.raw-table tr:nth-child(even) td { background: #f9f9ff; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: #f5f8ff; border-radius: 10px; padding: 1rem;
+    text-align: center; }
+.stat-card .val { font-size: 2rem; font-weight: 800; color: #0d2666; }
+.stat-card .lbl { font-size: .82rem; color: #666; }
+.ok  { color: #198754; font-weight: 700; }
+.err { color: #dc3545; font-weight: 700; }
+.cours-list { display: flex; flex-wrap: wrap; gap: .5rem; margin: .5rem 0; }
+.cours-badge { background: #e8f4fd; color: #0d2666; padding: .25rem .6rem;
+    border-radius: 20px; font-size: .82rem; }
+.upload-zone { border: 2px dashed #6f42c1; border-radius: 10px; padding: 2rem;
+    text-align: center; background: #f9f5ff; cursor: pointer; }
+.upload-zone label { color: #6f42c1; font-weight: 600; cursor: pointer; }
+.upload-zone input { display: none; }
+.btn-purple { background: #6f42c1; color: white; border: none; padding: .6rem 1.5rem;
+    border-radius: 7px; font-size:.95rem; cursor: pointer; }
+.btn-purple:hover { background: #5a32a3; }
+.hdr-highlight { background: #fff3cd !important; font-weight: bold; }
+.col-num-hi  td:nth-child(2) { background: #e3f9e5 !important; }
+.col-mat-hi  td:nth-child(3) { background: #d1ecf1 !important; }
+.debug-table { width: 100%; font-size: .85rem; border-collapse: collapse; }
+.debug-table td, .debug-table th { padding: .35rem .7rem; border: 1px solid #ddd; }
+.debug-table th { background: #0d2666; color: white; }
+.debug-table tr:nth-child(even) td { background: #f5f8ff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="diag-hero">
+    <h2>🔬 Diagnostic de grille</h2>
+    <p>Analysez la structure d'un fichier Excel avant de l'importer pour identifier les problèmes éventuels.</p>
+</div>
+
+<a href="{{ url_for('decanat_bulletins') }}" style="color:#888;font-size:.9rem;">← Retour Import</a>
+<br><br>
+
+<!-- Formulaire upload -->
+<div class="panel">
+    <h3>📤 Uploader une grille à analyser</h3>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="upload-zone">
+            <input type="file" id="dFile" name="grille" accept=".xls,.xlsx">
+            <label for="dFile">📂 Cliquez pour sélectionner la grille Excel (.xls / .xlsx)</label>
+            <p id="dFileName" style="color:#6f42c1;font-weight:600;margin:.5rem 0 0;"></p>
+        </div>
+        <div style="margin-top:1rem;">
+            <button type="submit" class="btn-purple">🔬 Analyser la structure</button>
+        </div>
+    </form>
+</div>
+
+{% if result %}
+<!-- Résumé du parsing -->
+<div class="panel">
+    <h3>📊 Résultat de l'analyse</h3>
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="val {% if result.nb_cours == 0 %}err{% else %}ok{% endif %}">
+                {{ result.nb_cours }}
+            </div>
+            <div class="lbl">Cours détectés</div>
+        </div>
+        <div class="stat-card">
+            <div class="val {% if result.nb_etudiants == 0 %}err{% else %}ok{% endif %}">
+                {{ result.nb_etudiants }}
+            </div>
+            <div class="lbl">Étudiants</div>
+        </div>
+        <div class="stat-card">
+            <div class="val">{{ result.meta.hdr_row + 1 }}</div>
+            <div class="lbl">Ligne en-tête détectée</div>
+        </div>
+        <div class="stat-card">
+            <div class="val">{{ result.meta.course_start_col + 1 }}</div>
+            <div class="lbl">1ère colonne cours</div>
+        </div>
+        <div class="stat-card">
+            <div class="val" style="font-size:1rem;">{{ result.meta.sheet[:20] }}</div>
+            <div class="lbl">Nom de la feuille</div>
+        </div>
+    </div>
+
+    {% if result.nb_cours == 0 %}
+    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+        <strong>⚠️ Aucun cours détecté !</strong><br>
+        Le parseur cherche les noms de cours en <b>ligne {{ result.meta.hdr_row + 1 }}</b>,
+        à partir de la colonne <b>{{ result.meta.course_start_col + 1 }}</b>.<br>
+        Vérifiez dans le tableau ci-dessous que cette ligne contient bien les noms de cours à cet endroit.
+    </div>
+    {% endif %}
+
+    {% if result.no_pondere %}
+    <div style="display:inline-block;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:.3rem .9rem;font-size:.85rem;font-weight:600;color:#856404;margin-bottom:1rem;">
+        📋 Format : note seule (sans pondéré)
+    </div>
+    {% endif %}
+
+    <!-- Colonnes de synthèse -->
+    <div style="margin-bottom:1rem;">
+        <strong>📋 Colonnes de synthèse :</strong>
+        {% if result.summary_cols_found %}
+        <div style="margin:.4rem 0 .3rem;">
+            <span style="color:#198754;font-weight:600;">✔ Détectées :</span>
+            {% for col in result.summary_cols_found %}
+            <span style="display:inline-block;background:#d1e7dd;color:#0a3622;padding:.2rem .55rem;border-radius:12px;font-size:.8rem;margin:.15rem .15rem;">{{ col }}</span>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if result.summary_cols_missing %}
+        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.7rem 1rem;margin-top:.4rem;">
+            <strong style="color:#856404;">⚠️ Colonnes clés manquantes :</strong>
+            {% for col in result.summary_cols_missing %}
+            <span style="display:inline-block;background:#ffeeba;color:#856404;padding:.2rem .55rem;border-radius:12px;font-size:.8rem;margin:.15rem .15rem;">{{ col }}</span>
+            {% endfor %}
+            <br><span style="font-size:.82rem;color:#856404;">Ces colonnes sont absentes ou nommées différemment — totaux et décision du jury afficheront <strong>0 / vide</strong> dans les bulletins.</span>
+        </div>
+        {% else %}
+        <span style="color:#198754;font-size:.85rem;font-weight:600;">✔ Toutes les colonnes clés sont présentes.</span>
+        {% endif %}
+    </div>
+
+    <!-- Tableau de debug : colonnes détectées -->
+    <details style="margin-bottom:1rem;">
+        <summary style="cursor:pointer;color:#6f42c1;font-weight:600;">🔧 Détail colonnes détectées</summary>
+        <table class="debug-table" style="margin-top:.7rem;max-width:500px;">
+            <thead><tr><th>Rôle</th><th>Colonne (index)</th><th>Numéro affiché</th></tr></thead>
+            <tbody>
+                <tr><td>N° étudiant</td><td>{{ result.meta.col_num }}</td><td>{{ result.meta.col_num + 1 }}</td></tr>
+                <tr><td>Matricule</td><td>{{ result.meta.col_mat }}</td><td>{{ result.meta.col_mat + 1 }}</td></tr>
+                <tr><td>Nom</td><td>{{ result.meta.col_nom }}</td><td>{{ result.meta.col_nom + 1 }}</td></tr>
+                <tr><td>Sexe</td><td>{{ result.meta.col_sex }}</td><td>{{ result.meta.col_sex + 1 }}</td></tr>
+                <tr><td><strong>1er cours</strong></td><td><strong>{{ result.meta.course_start_col }}</strong></td><td><strong>{{ result.meta.course_start_col + 1 }}</strong></td></tr>
+            </tbody>
+        </table>
+    </details>
+
+    {% if result.cours_sample %}
+    <p><strong>Premiers cours extraits :</strong></p>
+    <div class="cours-list">
+        {% for c in result.cours_sample %}
+        <span class="cours-badge">{{ c }}</span>
+        {% endfor %}
+        {% if result.nb_cours > 6 %}
+        <span class="cours-badge" style="background:#e0e0e0;">+ {{ result.nb_cours - 6 }} autres…</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if result.all_moy_zero %}
+    <div style="background:#f8d7da;border:1px solid #f5c2c7;border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem;">
+        <strong style="color:#842029;">❌ La colonne Moyenne existe mais toutes les valeurs sont 0</strong>
+        — vérifiez que les résultats ont bien été saisis avant d'importer cette grille.
+        L'import sera bloqué tant que cette situation persiste.
+    </div>
+    {% endif %}
+
+    {% if result.nb_valeurs_suspectes %}
+    <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem;">
+        <strong style="color:#856404;">⚠️ {{ result.nb_valeurs_suspectes }} étudiant(s) ont des valeurs suspectes</strong>
+        (moyenne &gt; 20 ou valeur négative) — vérifiez l'alignement des colonnes avant d'importer.
+    </div>
+    {% endif %}
+
+    {% if result.students_sample %}
+    <p><strong>Aperçu des 3 premiers étudiants :</strong></p>
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem;">
+        <thead>
+            <tr style="background:#0d2666;color:white;">
+                <th style="padding:.5rem;">Nom</th>
+                <th>Matricule</th>
+                <th>Total</th>
+                <th>Moy</th>
+                <th>Décision</th>
+                <th>Nb cours</th>
+                <th>3 premiers cours</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for s in result.students_sample %}
+        <tr style="border-bottom:1px solid #eee;">
+            <td style="padding:.5rem;">{{ s.nom }}</td>
+            <td>{{ s.matricule or '–' }}</td>
+            <td style="{% if s.total_suspect %}background:#fde8e8;color:#dc3545;font-weight:700;{% endif %}">
+                {{ s.total }}
+                {% if s.total_suspect %}<span title="Valeur suspecte (négative)">⚠️</span>{% endif %}
+            </td>
+            <td style="{% if s.moy_suspect %}background:#fde8e8;color:#dc3545;font-weight:700;{% endif %}">
+                {{ s.moyenne }}
+                {% if s.moy_suspect %}<span title="Valeur suspecte (hors plage 0–20)">⚠️</span>{% endif %}
+            </td>
+            <td>{{ s.decision or '–' }}</td>
+            <td style="text-align:center;">
+                <span style="{% if s.nb_cours == 0 %}color:#dc3545;font-weight:700;{% else %}color:#198754;font-weight:700;{% endif %}">
+                    {{ s.nb_cours }}
+                </span>
+            </td>
+            <td style="font-size:.8rem;color:#555;">{{ s.cours3 | join(' | ') or '–' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% endif %}
+</div>
+
+<!-- Lignes brutes -->
+<div class="panel">
+    <h3>🔍 Aperçu des 10 premières lignes brutes</h3>
+    <p style="color:#666;font-size:.85rem;">
+        La ligne surlignée en jaune est l'en-tête détecté (ligne {{ result.meta.hdr_row + 1 }}).
+        Colonnes affichées : les 20 premières.
+    </p>
+    <div style="overflow-x:auto;">
+    <table class="raw-table">
+        <thead>
+            <tr>
+                <th>Ligne</th>
+                {% for i in range(20) %}<th>C{{ i+1 }}</th>{% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for r_idx, row in result.raw_rows | enumerate %}
+            <tr {% if r_idx == result.meta.hdr_row %}class="hdr-highlight"{% endif %}>
+                <td><strong>{{ r_idx + 1 }}</strong>{% if r_idx == result.meta.hdr_row %} ← en-tête{% endif %}</td>
+                {% for cell in row %}
+                <td title="{{ cell }}">{{ cell if cell is not none else '' }}</td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <p style="color:#888;font-size:.8rem;margin-top:.5rem;">
+        💡 Si les cours commencent après la colonne 20, faites défiler ou consultez le détail des colonnes détectées ci-dessus.
+    </p>
+</div>
+{% endif %}
+
+<script>
+document.getElementById('dFile').addEventListener('change', function() {
+    const p = document.getElementById('dFileName');
+    if (this.files[0]) { p.textContent = '✅ ' + this.files[0].name; }
+});
+</script>
+{% endblock %}

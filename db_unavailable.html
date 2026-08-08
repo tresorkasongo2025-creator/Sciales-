@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Service temporairement indisponible — E-SCIALES UNILU +{% endblock %}
+
+{% block content %}
+<div style="
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+">
+    <div style="
+        max-width: 540px;
+        width: 100%;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+        padding: 3rem 2.5rem;
+        text-align: center;
+        border-top: 5px solid #dc3545;
+    ">
+        <!-- Icon -->
+        <div style="
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #fff5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            border: 2px solid #f5c6cb;
+        ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24"
+                 fill="none" stroke="#dc3545" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                <line x1="4" y1="4" x2="20" y2="20"/>
+            </svg>
+        </div>
+
+        <h1 style="
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a3a6b;
+            margin-bottom: 0.75rem;
+        ">Service temporairement indisponible</h1>
+
+        <p style="
+            color: #555;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        ">
+            La base de données est actuellement inaccessible.<br>
+            Veuillez contacter l'administrateur système.
+        </p>
+
+        <div style="
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            text-align: left;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            color: #666;
+        ">
+            <strong style="color: #333;">Que faire ?</strong>
+            <ul style="margin: 0.5rem 0 0 1.2rem; padding: 0; line-height: 1.8;">
+                <li>Patientez quelques instants et rechargez la page.</li>
+                <li>Si le problème persiste, contactez l'administrateur.</li>
+                <li>Les données existantes sont intactes — aucune perte n'a eu lieu.</li>
+            </ul>
+        </div>
+
+        <a href="{{ url_for('index') }}" style="
+            display: inline-block;
+            background: #1a3a6b;
+            color: #fff;
+            text-decoration: none;
+            padding: 0.65rem 1.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        " onmouseover="this.style.background='#2a5298'" onmouseout="this.style.background='#1a3a6b'">
+            ← Retour à l'accueil
+        </a>
+
+        <!-- Auto-retry -->
+        <div style="margin-top: 1.5rem; color: #888; font-size: 0.88rem;" id="retry-status">
+            Nouvelle tentative dans <strong id="retry-countdown">10</strong>s…
+        </div>
+        <button id="retry-now-btn" onclick="retryNow()" style="
+            margin-top: 0.5rem;
+            background: none;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 0.4rem 1.1rem;
+            font-size: 0.88rem;
+            color: #555;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        " onmouseover="this.style.borderColor='#1a3a6b';this.style.color='#1a3a6b'"
+           onmouseout="this.style.borderColor='#ccc';this.style.color='#555'">
+            Réessayer maintenant
+        </button>
+    </div>
+</div>
+
+<script>
+(function () {
+    var INTERVAL = 10;   // seconds between automatic polls
+    var remaining = INTERVAL;
+    var checking = false;
+
+    var countdownEl = document.getElementById('retry-countdown');
+    var statusEl    = document.getElementById('retry-status');
+    var btnEl       = document.getElementById('retry-now-btn');
+
+    function setChecking() {
+        checking = true;
+        statusEl.textContent = 'Vérification en cours…';
+        btnEl.disabled = true;
+        btnEl.style.opacity = '0.5';
+    }
+
+    function resetCountdown() {
+        checking = false;
+        remaining = INTERVAL;
+        countdownEl.textContent = remaining;
+        statusEl.innerHTML = 'Nouvelle tentative dans <strong id="retry-countdown">' + remaining + '</strong>s\u2026';
+        countdownEl = document.getElementById('retry-countdown');
+        btnEl.disabled = false;
+        btnEl.style.opacity = '1';
+    }
+
+    function check() {
+        setChecking();
+        fetch('/health', { cache: 'no-store' })
+            .then(function (r) {
+                if (r.ok) {
+                    statusEl.textContent = 'Base de données disponible — rechargement…';
+                    window.location.reload();
+                } else {
+                    resetCountdown();
+                }
+            })
+            .catch(function () {
+                resetCountdown();
+            });
+    }
+
+    window.retryNow = check;
+
+    // Tick every second; poll when countdown hits 0
+    setInterval(function () {
+        if (checking) return;
+        remaining -= 1;
+        countdownEl.textContent = remaining;
+        if (remaining <= 0) {
+            check();
+        }
+    }, 1000);
+})();
+</script>
+{% endblock %}

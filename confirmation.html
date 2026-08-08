@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Confirmation d'inscription{% endblock %}
+
+{% block content %}
+<div class="confirmation-page">
+    <div class="success-icon">✅</div>
+    <h2>Inscription réussie !</h2>
+    <p class="subtitle">Bienvenue à E-SCIALES UNILU +</p>
+
+    <div class="student-card">
+        <div class="student-info">
+            <div class="student-photo">
+                {% if etudiant.photo %}
+                <img src="{{ url_for('fichier_persistant', category='uploads', filename=etudiant.photo) }}"
+                     alt="Photo de {{ etudiant.prenom }}">
+                {% endif %}
+            </div>
+            <div class="student-details">
+                <h3>{{ etudiant.nom }} {{ etudiant.postnom }} {{ etudiant.prenom }}</h3>
+                <p><strong>CODE-ID FAC:</strong> <span class="matricule">{{ etudiant.matricule }}</span></p>
+                <p><strong>Département:</strong> {{ etudiant.departement }}</p>
+                <p><strong>Promotion:</strong> {{ etudiant.promotion }}</p>
+                <p><strong>Téléphone:</strong> {{ etudiant.telephone }}</p>
+                <p><strong>Sexe:</strong> {{ etudiant.sexe }}</p>
+            </div>
+        </div>
+        
+        <div class="qrcode-section">
+            <h4>Votre QR Code Personnel</h4>
+            <p class="qr-info">Ce code sera utilisé pour le contrôle de présence</p>
+            {% if etudiant.qrcode_path %}
+            <img src="{{ url_for('fichier_persistant', category='qrcodes', filename=etudiant.qrcode_path) }}"
+                 alt="QR Code" class="qrcode-img">
+            {% endif %}
+            <p class="note">⚠️ Conservez précieusement votre CODE-ID FAC et ce QR code</p>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <a href="{{ url_for('index') }}" class="btn btn-primary">
+            🏠 Retour à l'accueil
+        </a>
+        <button onclick="window.print()" class="btn btn-secondary">
+            🖨️ Imprimer
+        </button>
+        <a href="{{ url_for('telecharger_qrcode', matricule=etudiant.matricule) }}" class="btn btn-success">
+            📥 Télécharger QR Code
+        </a>
+        <a href="{{ url_for('telecharger_preuve_inscription', matricule=etudiant.matricule) }}" class="btn btn-danger">
+            📄 Preuve d'inscription
+        </a>
+        <a href="{{ url_for('telecharger_carte_examen', matricule=etudiant.matricule) }}" class="btn" style="background:#cc0000;color:#fff;font-weight:bold;">
+            🪪 Carte d'accès aux épreuves
+        </a>
+    </div>
+</div>
+{% endblock %}

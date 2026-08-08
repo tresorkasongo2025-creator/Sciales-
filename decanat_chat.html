@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Messages étudiants - DÉCANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-admin-grid { display:grid; grid-template-columns:260px 1fr; gap:1rem; }
+    .chat-thread-list, .chat-admin-panel { background:#fff; border-radius:14px; padding:1rem;
+        box-shadow:0 3px 15px rgba(0,0,0,.1); }
+    .chat-thread { display:block; color:#0d2666; text-decoration:none; padding:.7rem;
+        border-radius:8px; margin-bottom:.35rem; background:#f5f7fb; }
+    .chat-thread.active { background:#dce8ff; }
+    .chat-admin-messages { max-height:55vh; overflow-y:auto; background:#f5f8ff;
+        border-radius:10px; padding:.7rem; }
+    .admin-msg { padding:.55rem .7rem; border-radius:10px; margin:.4rem 0; max-width:82%;
+        white-space:pre-wrap; overflow-wrap:anywhere; }
+    .admin-msg.student { background:#dce8ff; }
+    .admin-msg.decanat { margin-left:auto; background:#e8f7ee; }
+    @media(max-width:700px) { .chat-admin-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>💬 Boîte de réception DÉCANAT</h2>
+    <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+</div>
+<div class="chat-admin-grid">
+    <aside class="chat-thread-list">
+        <strong>Étudiants ({{ threads|length }})</strong>
+        <p style="font-size:.8rem;color:#777;">Chat global : {% if chat_enabled %}actif{% else %}désactivé{% endif %}</p>
+        {% for item in threads %}
+        <a class="chat-thread {% if selected and selected.id == item.id %}active{% endif %}"
+           href="{{ url_for('decanat_chat', thread=item.id) }}">
+            <strong>{{ item.nom_complet }}</strong><br>
+            <small>{{ item.matricule }} · {{ item.promotion }}</small><br>
+            <small>{% if item.actif %}🟢 actif{% else %}🔒 désactivé{% endif %}</small>
+        </a>
+        {% else %}
+        <p style="color:#777;">Aucun espace créé.</p>
+        {% endfor %}
+    </aside>
+    <section class="chat-admin-panel">
+        {% if selected %}
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.5rem;flex-wrap:wrap;">
+            <div><h3 style="margin:0;">{{ selected.nom_complet }}</h3><small>{{ selected.matricule }} · {{ selected.promotion }}</small></div>
+            <form method="POST" action="{{ url_for('decanat_chat_toggle', thread_id=selected.id) }}">
+                <button class="btn {% if selected.actif %}btn-danger{% else %}btn-primary{% endif %}" type="submit">
+                    {% if selected.actif %}🔒 Désactiver{% else %}🔓 Activer{% endif %}
+                </button>
+            </form>
+        </div>
+        <div id="adminMessages" class="chat-admin-messages" style="margin-top:1rem;"></div>
+        {% if selected.actif %}
+        <form method="POST" action="{{ url_for('decanat_chat_message', thread_id=selected.id) }}"
+              style="display:flex;gap:.5rem;margin-top:.7rem;">
+            <textarea name="contenu" required maxlength="4000" placeholder="Répondre à l’étudiant..."
+                      style="flex:1;min-height:45px;padding:.6rem;border:1px solid #ccd5e2;border-radius:8px;"></textarea>
+            <button class="btn btn-primary" type="submit">Répondre</button>
+        </form>
+        {% endif %}
+        {% else %}
+        <p>Sélectionnez un étudiant pour consulter ses messages.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if selected %}
+<script>
+const adminMessages = document.getElementById('adminMessages');
+function renderAdmin(items) {
+  adminMessages.innerHTML = '';
+  items.forEach(m => {
+    const box = document.createElement('div');
+    box.className = 'admin-msg ' + (m.role === 'etudiant' ? 'student' : 'decanat');
+    box.textContent = m.contenu || '';
+    const meta=document.createElement('small'); meta.textContent=' '+m.nom+' · '+m.date; box.appendChild(meta);
+    adminMessages.appendChild(box);
+  });
+  adminMessages.scrollTop=adminMessages.scrollHeight;
+}
+async function adminRefresh() {
+  const r=await fetch('{{ url_for("decanat_chat_messages", thread_id=selected.id) }}'); if(!r.ok)return;
+  const data=await r.json(); renderAdmin(data.messages);
+}
+adminRefresh(); setInterval(adminRefresh,3000);
+</script>
+{% endif %}
+{% endblock %}

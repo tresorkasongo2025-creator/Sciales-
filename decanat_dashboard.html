@@ -1,0 +1,417 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord DECANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+    .decanat-dashboard .stats-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .8rem;
+        margin: 0 0 1.25rem;
+    }
+    .decanat-dashboard .stat-card {
+        padding: .8rem 1rem;
+        gap: .7rem;
+        border-left: 4px solid #3498db;
+    }
+    .decanat-dashboard .stat-icon {
+        font-size: 1.65rem;
+    }
+    .decanat-dashboard .stat-info h3 {
+        font-size: 1.45rem;
+        line-height: 1.1;
+    }
+    .decanat-dashboard .stat-info p {
+        font-size: .82rem;
+        line-height: 1.2;
+    }
+    .decanat-dashboard .dashboard-cards {
+        display: block;
+        margin-bottom: 1.25rem;
+    }
+    .decanat-dashboard .dashboard-section {
+        margin-bottom: 1.25rem;
+    }
+    .decanat-dashboard .dashboard-section:last-child {
+        margin-bottom: 0;
+    }
+    .decanat-dashboard .dashboard-section-title {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        color: #dce9ff;
+        font-size: .95rem;
+        font-weight: 700;
+        margin: 0 0 .55rem .15rem;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .decanat-dashboard .dashboard-section-title::after {
+        content: "";
+        height: 1px;
+        flex: 1;
+        background: rgba(255,255,255,.22);
+    }
+    .decanat-dashboard .dashboard-section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+        gap: .8rem;
+    }
+    .decanat-dashboard .dashboard-card {
+        padding: 1rem;
+        text-align: left;
+        border-radius: 8px;
+        min-height: 0;
+        box-shadow: 0 3px 10px rgba(0,0,0,.09);
+    }
+    .decanat-dashboard .dashboard-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0,0,0,.14);
+    }
+    .decanat-dashboard .dashboard-card .card-icon {
+        font-size: 1.65rem;
+        line-height: 1;
+        margin-bottom: .45rem;
+    }
+    .decanat-dashboard .dashboard-card h3 {
+        font-size: .98rem;
+        line-height: 1.25;
+        margin-bottom: .35rem;
+    }
+    .decanat-dashboard .dashboard-card p {
+        font-size: .79rem;
+        line-height: 1.35;
+        margin-bottom: .7rem;
+    }
+    .decanat-dashboard .dashboard-card .btn {
+        width: 100%;
+        padding: .48rem .65rem;
+        font-size: .78rem;
+        line-height: 1.25;
+    }
+    .decanat-dashboard .dashboard-card .btn + .btn {
+        margin-top: .35rem !important;
+    }
+    .decanat-dashboard .quick-filters {
+        padding: 1.15rem;
+    }
+    @media (max-width: 600px) {
+        .decanat-dashboard .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        .decanat-dashboard .dashboard-section-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    @media (min-width: 601px) and (max-width: 900px) {
+        .decanat-dashboard .stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="decanat-dashboard">
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.75rem;">
+    <div>
+        <h2>🏛️ Tableau de bord DECANAT</h2>
+        <p>Gestion de la faculté</p>
+    </div>
+    <!-- ── Opérateur courant + changer de nom ── -->
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;">
+        <div id="operatorBadge" style="display:flex;align-items:center;gap:.5rem;">
+            <span style="background:rgba(255,255,255,.18);border-radius:20px;
+                         padding:.2rem .75rem;font-size:.85rem;font-weight:600;">
+                👤 <span id="operatorLabel">{{ session.get('decanat_operator', '—') }}</span>
+            </span>
+            <button type="button" onclick="toggleOperatorForm()"
+                    title="Changer d'opérateur"
+                    style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);
+                           color:white;border-radius:6px;padding:.2rem .6rem;
+                           font-size:.82rem;cursor:pointer;">✏️ Changer</button>
+        </div>
+        <div id="operatorForm" style="display:none;">
+            <form method="POST" action="{{ url_for('decanat_switch_operator') }}"
+                  style="display:flex;gap:.4rem;align-items:center;"
+                  onsubmit="return validateOperator(this)">
+                <input type="hidden" name="next" value="{{ request.url }}">
+                <input type="text" name="operator_name" id="operatorInput"
+                       placeholder="Votre nom complet"
+                       value="{{ session.get('decanat_operator', '') }}"
+                       maxlength="80" required
+                       style="padding:.3rem .6rem;border-radius:6px;border:1.5px solid rgba(255,255,255,.5);
+                              background:rgba(255,255,255,.15);color:white;font-size:.85rem;
+                              width:200px;outline:none;"
+                       onfocus="this.style.borderColor='white'"
+                       onblur="this.style.borderColor='rgba(255,255,255,.5)'">
+                <button type="submit"
+                        style="background:#198754;color:white;border:none;border-radius:6px;
+                               padding:.3rem .75rem;font-size:.82rem;cursor:pointer;
+                               font-weight:700;">✔ OK</button>
+                <button type="button" onclick="toggleOperatorForm()"
+                        style="background:rgba(255,255,255,.2);color:white;border:none;
+                               border-radius:6px;padding:.3rem .65rem;font-size:.82rem;
+                               cursor:pointer;">✕</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleOperatorForm() {
+    const badge = document.getElementById('operatorBadge');
+    const form  = document.getElementById('operatorForm');
+    const input = document.getElementById('operatorInput');
+    const isHidden = form.style.display === 'none';
+    form.style.display  = isHidden ? 'block' : 'none';
+    badge.style.display = isHidden ? 'none'  : 'flex';
+    if (isHidden) { input.focus(); input.select(); }
+}
+function validateOperator(form) {
+    const val = form.operator_name.value.trim();
+    if (!val) { form.operator_name.focus(); return false; }
+    return true;
+}
+</script>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-info">
+            <h3>{{ stats.total_etudiants }}</h3>
+            <p>Étudiants inscrits</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">👨‍🏫</div>
+        <div class="stat-info">
+            <h3>{{ stats.total_professeurs }}</h3>
+            <p>Professeurs</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📚</div>
+        <div class="stat-info">
+            <h3>{{ stats.total_cours }}</h3>
+            <p>Cours</p>
+        </div>
+    </div>
+    <div class="stat-card" style="border-left-color:#8e44ad;">
+        <div class="stat-icon">👁️</div>
+        <div class="stat-info">
+            <h3>{{ stats.total_visites }}</h3>
+            <p>Visites du site<br><small style="color:#777;">{{ stats.visites_aujourd_hui }} aujourd’hui</small></p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-cards">
+    <section class="dashboard-section">
+        <h3 class="dashboard-section-title">🎓 Gestion académique</h3>
+        <div class="dashboard-section-grid">
+    <div class="card dashboard-card">
+        <div class="card-icon">📋</div>
+        <h3>Gestion des étudiants</h3>
+        <p>Consulter et exporter les listes d'étudiants par département et promotion</p>
+        <a href="{{ url_for('decanat_etudiants') }}" class="btn btn-primary">Voir les listes</a>
+    </div>
+
+    <div class="card dashboard-card">
+        <div class="card-icon">📚</div>
+        <h3>Gestion des cours</h3>
+        <p>Ajouter, modifier et supprimer les cours de la faculté</p>
+        <a href="{{ url_for('decanat_cours') }}" class="btn btn-primary">Gérer les cours</a>
+    </div>
+
+    <div class="card dashboard-card">
+        <div class="card-icon">📅</div>
+        <h3>Gestion des horaires</h3>
+        <p>Publier et gérer les horaires normaux et de complément</p>
+        <a href="{{ url_for('decanat_horaires') }}" class="btn btn-primary">Gérer les horaires</a>
+    </div>
+
+    <div class="card dashboard-card">
+        <div class="card-icon">📰</div>
+        <h3>Actualités et communiqués</h3>
+        <p>Publier les actualités officielles avec ou sans images</p>
+        <a href="{{ url_for('decanat_actualites') }}" class="btn btn-primary">Gérer les actualités</a>
+    </div>
+
+    <div class="card dashboard-card">
+        <div class="card-icon">📊</div>
+        <h3>Listes de présence</h3>
+        <p>Consulter et exporter les présences par cours et par date</p>
+        <a href="{{ url_for('decanat_presences') }}" class="btn btn-primary">Voir les présences</a>
+    </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <h3 class="dashboard-section-title">📰 Contenu de la faculté</h3>
+        <div class="dashboard-section-grid">
+    <div class="card dashboard-card">
+        <div class="card-icon">ℹ️</div>
+        <h3>Gestion page À PROPOS</h3>
+        <p>Modifier le contenu de la page À PROPOS et changer la photo de la Faculté</p>
+        <a href="{{ url_for('decanat_page_apropos') }}" class="btn btn-primary">Éditer À PROPOS</a>
+    </div>
+
+    <div class="card dashboard-card">
+        <div class="card-icon">🏢</div>
+        <h3>Gestion page Départements</h3>
+        <p>Modifier les descriptions et débouchés des départements</p>
+        <a href="{{ url_for('decanat_page_departements') }}" class="btn btn-primary">Éditer Départements</a>
+    </div>
+
+    <div class="card dashboard-card" {% if template_manquant %}style="border-top:4px solid #dc3545;"{% endif %}>
+        <div class="card-icon">📄</div>
+        <h3>Générateur de lettres
+            {% if template_manquant %}
+            <span style="font-size:.75rem;background:#dc3545;color:#fff;padding:2px 8px;border-radius:10px;vertical-align:middle;margin-left:6px;">⚠ Modèle manquant</span>
+            {% endif %}
+        </h3>
+        {% if template_manquant %}
+        <p style="color:#dc3545;font-size:.85rem;margin-bottom:6px;">Aucun modèle Word n'a encore été téléversé. Veuillez en uploader un avant de générer des lettres.</p>
+        {% else %}
+        <p>Générer automatiquement les lettres de charge horaire pour les professeurs</p>
+        {% endif %}
+        <a href="{{ url_for('decanat_generateur_lettres') }}" class="btn btn-primary">Générer les lettres</a>
+    </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <h3 class="dashboard-section-title">📚 Bulletins et documents</h3>
+        <div class="dashboard-section-grid">
+    <div class="card dashboard-card" style="border-top:4px solid #0d2666;">
+        <div class="card-icon">📋</div>
+        <h3>Bulletins Académiques</h3>
+        <p>Importer les grilles de délibération et gérer les paiements de consultation des bulletins</p>
+        <a href="{{ url_for('decanat_bulletins') }}" class="btn btn-primary">Gérer les bulletins</a>
+        <a href="{{ url_for('decanat_bulletins_dashboard') }}" class="btn" style="margin-top:.4rem;background:#198754;color:white;display:block;text-align:center;text-decoration:none;padding:.5rem 1rem;border-radius:6px;">📊 Tableau de bord paiements</a>
+    </div>
+
+    <div class="card dashboard-card" style="border-top:4px solid #6f42c1;">
+        <div class="card-icon">📄</div>
+        <h3>Générer les relevés de cotes</h3>
+        <p>Générer les relevés officiels, suivre les commandes étudiantes et gérer l’accès public.</p>
+        <a href="{{ url_for('decanat_releves_cotes') }}" class="btn" style="background:#6f42c1;color:white;display:block;text-align:center;text-decoration:none;padding:.5rem 1rem;border-radius:6px;">Ouvrir l’espace Relevés</a>
+    </div>
+
+    <div class="card dashboard-card" style="border-top:4px solid #198754;">
+        <div class="card-icon">💬</div>
+        <h3>Communication étudiants</h3>
+        <p>Recevoir les messages, vocaux et demandes d’appel des étudiants.</p>
+        <a href="{{ url_for('decanat_chat') }}" class="btn btn-primary">Ouvrir la boîte de réception</a>
+    </div>
+
+    <div class="card dashboard-card" style="border-top:4px solid #bfa01a;">
+        <div class="card-icon">🧾</div>
+        <h3>Génération de Reçus</h3>
+        <p>Générer les reçus physiques imprimables (6/page A4) avec QR code unique à usage unique</p>
+        <a href="{{ url_for('decanat_recus') }}" class="btn btn-primary">Générer les reçus</a>
+        <a href="{{ url_for('decanat_recus_verifier') }}" class="btn" style="margin-top:.4rem;background:#198754;color:white;display:block;text-align:center;text-decoration:none;padding:.5rem 1rem;border-radius:6px;">🔎 Vérifier un reçu</a>
+    </div>
+
+    <div class="card dashboard-card" style="border-top:4px solid #dc3545;">
+        <div class="card-icon">📝</div>
+        <h3>Gestion des Recours</h3>
+        <p>Consulter tous les formulaires de recours soumis par les étudiants, classés par promotion, et les exporter en PDF</p>
+        <a href="{{ url_for('decanat_recours') }}" class="btn btn-primary">Voir les recours</a>
+    </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <h3 class="dashboard-section-title">💾 Données et sécurité</h3>
+        <div class="dashboard-section-grid">
+    <div class="card dashboard-card" style="border-top:4px solid #198754;">
+        <div class="card-icon">📋</div>
+        <h3>Listes d'identifiants</h3>
+        <p>Importer les listes officielles UNILU (matricules + mots de passe) par promotion pour lier les bulletins</p>
+        <a href="{{ url_for('decanat_listes_identifiants') }}" class="btn btn-primary">Gérer les listes</a>
+    </div>
+
+    <div class="card dashboard-card" style="border-top:4px solid #0d6efd;">
+        <div class="card-icon">💾</div>
+        <h3>Sauvegarde &amp; Restauration</h3>
+        <p>Exporter toutes les données de la base en un fichier JSON ou restaurer depuis une sauvegarde existante</p>
+        <a href="{{ url_for('decanat_restore') }}" class="btn btn-primary">Sauvegarder / Restaurer</a>
+    </div>
+        </div>
+    </section>
+</div>
+
+<div class="quick-filters">
+    <h3>Filtres rapides</h3>
+    <div class="filter-grid">
+        <div>
+            <h4>Par Département</h4>
+            <ul class="filter-list">
+                {% for dept in departements %}
+                <li><a href="{{ url_for('decanat_etudiants', departement=dept) }}">{{ dept }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div>
+            <h4>Par Promotion</h4>
+            <ul class="filter-list">
+                {% for promo in promotions %}
+                <li><a href="{{ url_for('decanat_etudiants', promotion=promo) }}">{{ promo }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-visibility-card" style="background:#fff;border-radius:10px;padding:1rem 1.15rem;margin-top:1rem;box-shadow:0 2px 10px rgba(0,0,0,.1);">
+    <h3 style="margin:0 0 .35rem;color:#2c3e50;font-size:1rem;">👁️ Éléments visibles sur l’accueil public</h3>
+    <p style="margin:0 0 .8rem;color:#7f8c8d;font-size:.8rem;">
+        Choisissez les éléments que les visiteurs peuvent voir sur la page d’accueil.
+    </p>
+    <form method="POST" action="{{ url_for('decanat_dashboard_visibility') }}"
+          style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:center;">
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="home_scanner_visible" value="1"
+                   {% if home_scanner_visible %}checked{% endif %}>
+            📱 Scanner de présence
+        </label>
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="home_actualites_visible" value="1"
+                   {% if home_actualites_visible %}checked{% endif %}>
+            📰 Actualités facultaires
+        </label>
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="home_search_visible" value="1"
+                   {% if home_search_visible %}checked{% endif %}>
+            🔍 Recherche CODE-ID FAC
+        </label>
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="home_info_visible" value="1"
+                   {% if home_info_visible %}checked{% endif %}>
+            ℹ️ À propos du système
+        </label>
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="chat_enabled" value="1"
+                   {% if chat_enabled %}checked{% endif %}>
+            💬 Espace de communication
+        </label>
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="chat_registration_open" value="1"
+                   {% if chat_registration_open %}checked{% endif %}>
+            📝 Nouvelles inscriptions de contact
+        </label>
+        <label style="display:flex;align-items:center;gap:.45rem;font-size:.85rem;cursor:pointer;">
+            <input type="checkbox" name="student_registration_open" value="1"
+                   {% if student_registration_open %}checked{% endif %}>
+            🎓 Formulaire principal d'inscription
+        </label>
+        <button type="submit" class="btn btn-primary"
+                style="padding:.45rem .85rem;font-size:.8rem;">
+            Enregistrer l’affichage
+        </button>
+    </form>
+</div>
+</div>
+{% endblock %}

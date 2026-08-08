@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Migration des fichiers - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📁 Migration des fichiers</h2>
+    <div class="header-actions">
+        <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+    </div>
+</div>
+
+<div style="padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto;">
+
+    <!-- Statut des fichiers -->
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:1.5rem; margin-bottom:2rem;">
+        <h3 style="margin-top:0; color:#0d2666;">
+            📊 Statut des fichiers référencés dans la base de données
+        </h3>
+        <p style="color:#555; margin-bottom:1.2rem;">
+            Cette section indique si les fichiers enregistrés dans la base de données sont bien présents
+            sur le disque du serveur. Des fichiers manquants indiquent qu'une migration est nécessaire.
+        </p>
+
+        {% set categories = [
+            ('📷 Photos étudiants',  'photos',    'uploads/'),
+            ('🔲 QR codes étudiants','qrcodes',   'qrcodes/'),
+            ('📅 Horaires',          'horaires',  'horaires/'),
+            ('📰 Images actualités', 'actualites','actualites/')
+        ] %}
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-bottom:1.2rem;">
+            {% for label, key, folder in categories %}
+            {% set s = statut[key] %}
+            <div style="border-radius:8px; padding:1rem; text-align:center;
+                        background:{% if s.missing %}#fff3cd{% else %}#d1e7dd{% endif %};
+                        border:1px solid {% if s.missing %}#ffc107{% else %}#198754{% endif %};">
+                <div style="font-size:1.5rem;">{{ label.split()[0] }}</div>
+                <div style="font-weight:600; font-size:.95rem; margin:.4rem 0;">{{ label[2:] }}</div>
+                <div style="color:#198754; font-size:.9rem;">✅ {{ s.present }} présent(s)</div>
+                {% if s.missing %}
+                <div style="color:#856404; font-size:.9rem;">⚠️ {{ s.missing|length }} manquant(s)</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if total_missing == 0 %}
+        <div style="background:#d1e7dd; border:1px solid #198754; border-radius:8px; padding:.8rem 1rem; color:#0a3622;">
+            ✅ Tous les fichiers référencés sont présents sur le serveur. Aucune migration nécessaire.
+        </div>
+        {% else %}
+        <div style="background:#fff3cd; border:1px solid #ffc107; border-radius:8px; padding:.8rem 1rem; color:#664d03;">
+            ⚠️ <strong>{{ total_missing }} fichier(s) manquant(s)</strong> — utilisez l'import ZIP ci-dessous pour les restaurer.
+        </div>
+
+        <!-- Détail des fichiers manquants -->
+        {% for label, key, folder in categories %}
+        {% if statut[key].missing %}
+        <details style="margin-top:1rem;">
+            <summary style="cursor:pointer; font-weight:600; color:#856404;">
+                {{ label }} — {{ statut[key].missing|length }} fichier(s) manquant(s)
+            </summary>
+            <ul style="margin:.5rem 0 0 1.5rem; font-family:monospace; font-size:.85rem; color:#555;">
+                {% for f in statut[key].missing %}
+                <li>{{ folder }}{{ f }}</li>
+                {% endfor %}
+            </ul>
+        </details>
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Import ZIP -->
+    <div style="background:#fff; border:1px solid #dee2e6; border-radius:10px; padding:1.5rem; margin-bottom:2rem;">
+        <h3 style="margin-top:0; color:#0d2666;">⬆️ Importer les fichiers depuis un ZIP</h3>
+        <p style="color:#555; margin-bottom:1rem;">
+            Créez un ZIP sur votre machine de développement contenant les répertoires suivants, puis uploadez-le ici.
+            Les fichiers existants seront remplacés silencieusement.
+        </p>
+
+        <!-- Instructions de création du ZIP -->
+        <details style="margin-bottom:1.2rem; background:#f8f9fa; border:1px solid #dee2e6; border-radius:6px; padding:.8rem 1rem;">
+            <summary style="cursor:pointer; font-weight:600; color:#0d2666;">📋 Comment créer le ZIP sur votre machine de dev</summary>
+            <div style="margin-top:.8rem; font-size:.9rem; color:#333;">
+                <p style="margin:.4rem 0;"><strong>Structure attendue dans le ZIP :</strong></p>
+                <pre style="background:#212529; color:#f8f9fa; padding:.8rem 1rem; border-radius:6px; font-size:.82rem; overflow-x:auto;">mon_export.zip
+├── uploads/          ← photos étudiants (*.jpg, *.png, *.jpeg)
+│   ├── ETU000001_photo.jpg
+│   └── ...
+├── qrcodes/          ← QR codes (*.png)
+│   ├── ETU000001.png
+│   └── ...
+├── horaires/         ← horaires (*.pdf, *.jpg, *.png)
+│   └── RI_BAC_2_normal_...pdf
+└── actualites/       ← images actualités (*.jpg, *.png)
+    └── 20251103_...jpg</pre>
+                <p style="margin:.8rem 0 .3rem;"><strong>Commande Linux/Mac :</strong></p>
+                <pre style="background:#212529; color:#f8f9fa; padding:.8rem 1rem; border-radius:6px; font-size:.82rem; overflow-x:auto;">cd /chemin/vers/votre/projet
+zip -r mon_export.zip static/uploads static/qrcodes static/horaires static/actualites \
+    --junk-paths \
+    -x "*/.*"
+# Ensuite renommez les répertoires dans le ZIP si nécessaire
+# OU utilisez cette commande qui garde la bonne structure :
+zip -r mon_export.zip uploads/ qrcodes/ horaires/ actualites/ \
+  -i "uploads/*" -i "qrcodes/*" -i "horaires/*" -i "actualites/*"</pre>
+                <p style="margin:.8rem 0 .3rem;"><strong>Script Python plus simple :</strong></p>
+                <pre style="background:#212529; color:#f8f9fa; padding:.8rem 1rem; border-radius:6px; font-size:.82rem; overflow-x:auto;">import zipfile, os
+
+folders = ['uploads', 'qrcodes', 'horaires', 'actualites']
+with zipfile.ZipFile('mon_export.zip', 'w', zipfile.ZIP_DEFLATED) as zf:
+    for folder in folders:
+        src = os.path.join('static', folder)
+        for fname in os.listdir(src):
+            fpath = os.path.join(src, fname)
+            if os.path.isfile(fpath):
+                zf.write(fpath, arcname=f'{folder}/{fname}')
+print('ZIP créé : mon_export.zip')</pre>
+                <p style="color:#666; font-size:.85rem; margin-top:.6rem;">
+                    ⚠️ Le ZIP doit contenir les sous-répertoires <code>uploads/</code>, <code>qrcodes/</code>,
+                    <code>horaires/</code> et/ou <code>actualites/</code> directement à la racine.
+                    Seules les extensions <code>.png .jpg .jpeg .pdf</code> sont acceptées.
+                </p>
+            </div>
+        </details>
+
+        <form method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="action" value="import_zip">
+            <div style="display:flex; gap:1rem; align-items:flex-end; flex-wrap:wrap;">
+                <div style="flex:1; min-width:260px;">
+                    <label for="fichier_zip" style="display:block; font-weight:600; margin-bottom:.4rem;">
+                        Fichier ZIP à importer *
+                    </label>
+                    <input type="file" id="fichier_zip" name="fichier_zip" accept=".zip" required
+                           style="width:100%; padding:.5rem; border:1px solid #ced4da; border-radius:6px;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="white-space:nowrap;">
+                    ⬆️ Importer le ZIP
+                </button>
+            </div>
+            <p style="color:#888; font-size:.82rem; margin-top:.5rem;">
+                Taille maximale : 16 Mo. Pour des volumes plus importants, utilisez le terminal Replit.
+            </p>
+        </form>
+
+        {% if import_log %}
+        <div style="margin-top:1rem; background:#d1e7dd; border:1px solid #198754; border-radius:8px; padding:.8rem 1rem;">
+            <strong style="color:#0a3622;">✅ {{ import_log|length }} fichier(s) importé(s) :</strong>
+            <ul style="margin:.5rem 0 0 1.2rem; font-family:monospace; font-size:.85rem; color:#0a3622;">
+                {% for f in import_log %}
+                <li>{{ f }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% if import_errors %}
+        <div style="margin-top:.8rem; background:#f8d7da; border:1px solid #dc3545; border-radius:8px; padding:.8rem 1rem;">
+            <strong style="color:#842029;">⚠️ Erreurs :</strong>
+            <ul style="margin:.5rem 0 0 1.2rem; font-size:.85rem; color:#842029;">
+                {% for e in import_errors %}
+                <li>{{ e }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Note sur la persistance -->
+    <div style="background:#e7f3ff; border:1px solid #0d6efd; border-radius:10px; padding:1.2rem 1.5rem;">
+        <h4 style="margin-top:0; color:#0d2666;">ℹ️ Persistance des fichiers sur ce serveur</h4>
+        <p style="color:#333; margin-bottom:.5rem;">
+            L'application tourne sur une <strong>VM Réservée</strong> avec un système de fichiers persistant.
+            Les fichiers uploadés (photos, QR codes, horaires, actualités) <strong>survivent aux redémarrages et aux redéploiements</strong>
+            — ils ne sont jamais effacés automatiquement.
+        </p>
+        <p style="color:#555; font-size:.9rem; margin:0;">
+            Une migration est uniquement nécessaire lors du passage initial de l'environnement de développement
+            vers la production, ou après un changement de serveur.
+        </p>
+    </div>
+
+</div>
+{% endblock %}

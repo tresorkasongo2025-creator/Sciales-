@@ -1,0 +1,716 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord – Bulletins{% endblock %}
+
+{% block extra_css %}
+<style>
+.bul-hero { background: linear-gradient(135deg, #0d2666 0%, #1a4db8 100%);
+    color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+.bul-hero h2 { margin: 0 0 .4rem; font-size: 1.6rem; }
+.bul-hero p  { margin: 0; opacity: .85; }
+
+.stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1.2rem; margin-bottom: 2rem; }
+.stat-card-bul { background: white; border-radius: 12px; padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); text-align: center; border-top: 4px solid; }
+.stat-card-bul.blue   { border-color: #1a4db8; }
+.stat-card-bul.green  { border-color: #198754; }
+.stat-card-bul.orange { border-color: #fd7e14; }
+.stat-card-bul.gold   { border-color: #bfa01a; }
+.stat-card-bul .num { font-size: 2.2rem; font-weight: 800; margin: .3rem 0; }
+.stat-card-bul .lbl { color: #666; font-size: .88rem; }
+.stat-card-bul .icon { font-size: 1.8rem; }
+
+.panel { background: white; border-radius: 12px; padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.5rem; }
+.panel h3 { margin-top: 0; color: #0d2666; border-bottom: 2px solid #e8ecf0; padding-bottom: .6rem; margin-bottom: 1rem; }
+
+.table-bul { width: 100%; border-collapse: collapse; }
+.table-bul th { background: #0d2666; color: white; padding: .6rem .9rem; font-size: .85rem; text-align: left; }
+.table-bul td { padding: .6rem .9rem; border-bottom: 1px solid #eee; font-size: .88rem; vertical-align: middle; }
+.table-bul tr:hover td { background: #f5f8ff; }
+
+.badge-warn  { background: #fd7e14; color: white; padding: .18rem .55rem; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+.badge-ok    { background: #198754; color: white; padding: .18rem .55rem; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+.badge-today { background: #1a4db8; color: white; padding: .18rem .55rem; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+
+.nav-tabs-bul { display: flex; gap: 0; border-bottom: 2px solid #e0e4ea; margin-bottom: 1.5rem; }
+.nav-tab-bul { padding: .6rem 1.2rem; background: none; border: none; cursor: pointer;
+    font-size: .9rem; color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    text-decoration: none; }
+.nav-tab-bul.active { color: #0d2666; font-weight: 700; border-bottom-color: #0d2666; }
+
+/* Filtres */
+.filtre-bar { display: flex; flex-wrap: wrap; gap: .8rem; align-items: flex-end;
+    background: #f0f4ff; border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+.filtre-bar label { font-size: .82rem; font-weight: 600; color: #333; display: block; margin-bottom: .25rem; }
+.filtre-bar select, .filtre-bar input[type="date"] {
+    padding: .38rem .7rem; border: 1px solid #c8d0e0; border-radius: 6px;
+    font-size: .88rem; background: white; min-width: 170px; }
+.date-range-fields { display: flex; gap: .5rem; flex-wrap: wrap; }
+.date-range-fields[hidden] { display: none; }
+.btn-filtre { padding: .42rem 1.1rem; border: none; border-radius: 6px; cursor: pointer;
+    font-size: .88rem; font-weight: 600; }
+.btn-filtre.apply  { background: #0d2666; color: white; }
+.btn-filtre.reset  { background: #e8ecf0; color: #444; text-decoration: none; }
+.btn-filtre.apply:hover { background: #1a4db8; }
+
+/* Boutons action */
+.btn-dl  { display: inline-flex; align-items: center; gap: .35rem;
+    padding: .32rem .85rem; border-radius: 6px; font-size: .8rem; font-weight: 600;
+    text-decoration: none; border: none; cursor: pointer; }
+.btn-dl.zip  { background: #1a4db8; color: white; }
+.btn-dl.zip:hover  { background: #0d2666; }
+.btn-dl.detail { background: #e8f0ff; color: #1a4db8; }
+.btn-dl.detail:hover { background: #d0deff; }
+
+/* Progress bar */
+.prog-wrap { height: 7px; background: #e8ecf0; border-radius: 4px; min-width: 80px; }
+.prog-fill  { height: 7px; border-radius: 4px; background: #198754; }
+
+.date-chip { background: #fff3cd; color: #856404; border: 1px solid #ffc107;
+    border-radius: 20px; padding: .15rem .6rem; font-size: .78rem; font-weight: 600; display: inline-block; }
+
+/* Badge alerte scans */
+.alert-badge { display: inline-flex; align-items: center; justify-content: center;
+    background: #dc3545; color: white; border-radius: 50%; width: 1.2rem; height: 1.2rem;
+    font-size: .68rem; font-weight: 800; margin-left: .35rem; vertical-align: middle;
+    line-height: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bul-hero">
+    <h2>📊 Tableau de bord – Bulletins Académiques</h2>
+    <p>Suivi des paiements par département, promotion et date</p>
+</div>
+
+<div class="nav-tabs-bul">
+    <a href="{{ url_for('decanat_bulletins') }}" class="nav-tab-bul">📥 Import grille</a>
+    <a href="{{ url_for('decanat_bulletins_sessions') }}" class="nav-tab-bul">📂 Sessions</a>
+    <a href="{{ url_for('decanat_bulletins_dashboard') }}" class="nav-tab-bul active">
+        📊 Tableau de bord
+        {% if nb_nouveaux_suspects and nb_nouveaux_suspects > 0 %}
+            <span class="alert-badge" title="{{ nb_nouveaux_suspects }} nouveau(x) scan(s) suspect(s)">
+                {{ nb_nouveaux_suspects if nb_nouveaux_suspects < 100 else '99+' }}
+            </span>
+        {% endif %}
+    </a>
+</div>
+
+<!-- Statistiques globales -->
+<div class="stat-cards">
+    <div class="stat-card-bul blue">
+        <div class="icon">👥</div>
+        <div class="num">{{ total_bulletins }}</div>
+        <div class="lbl">Bulletins générés</div>
+    </div>
+    <div class="stat-card-bul green">
+        <div class="icon">✅</div>
+        <div class="num">{{ total_payes }}</div>
+        <div class="lbl">Paiements effectués</div>
+    </div>
+    <div class="stat-card-bul orange">
+        <div class="icon">⬇</div>
+        <div class="num">{{ total_telecharge }}</div>
+        <div class="lbl">Bulletins téléchargés</div>
+    </div>
+    <div class="stat-card-bul gold">
+        <div class="icon">💰</div>
+        <div class="num">{{ "{:,}".format(recettes) }}</div>
+        <div class="lbl">Recettes totales (FC)</div>
+    </div>
+</div>
+
+<!-- ══ Tableau détaillé avec filtres ══ -->
+<div class="panel">
+    <h3>🎓 Paiements par promotion &amp; département</h3>
+
+    <!-- Barre de filtres -->
+    <form method="get" action="{{ url_for('decanat_bulletins_dashboard') }}">
+        <div class="filtre-bar">
+            <div>
+                <label>Département</label>
+                <select name="dept">
+                    <option value="">— Tous —</option>
+                    {% for d in depts_dispo %}
+                        <option value="{{ d }}" {% if filtre_dept == d %}selected{% endif %}>{{ d }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Promotion</label>
+                <select name="promo">
+                    <option value="">— Toutes —</option>
+                    {% for p in promos_dispo %}
+                        <option value="{{ p }}" {% if filtre_promo == p %}selected{% endif %}>{{ p }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Période des paiements</label>
+                <select name="date_mode" id="dashboardDateMode" onchange="toggleDashboardDateFields()">
+                    <option value="today" {% if filtre_date_mode == 'today' %}selected{% endif %}>Aujourd'hui</option>
+                    <option value="all" {% if filtre_date_mode == 'all' %}selected{% endif %}>Toutes les dates</option>
+                    <option value="exact" {% if filtre_date_mode == 'exact' %}selected{% endif %}>Une date précise</option>
+                    <option value="range" {% if filtre_date_mode == 'range' %}selected{% endif %}>Du / au</option>
+                </select>
+            </div>
+            <div>
+                <label>Session</label>
+                <select name="session">
+                    <option value="" {% if not filtre_session %}selected{% endif %}>Toutes les sessions</option>
+                    <option value="speciale" {% if filtre_session == 'speciale' %}selected{% endif %}>Spéciale</option>
+                    <option value="recours" {% if filtre_session == 'recours' %}selected{% endif %}>Recours</option>
+                        <option value="initial" {% if filtre_session == 'initial' %}selected{% endif %}>1ère session uniquement</option>
+                        <option value="session_2" {% if filtre_session == 'session_2' %}selected{% endif %}>2ème session uniquement</option>
+                        <option value="recours_1" {% if filtre_session == 'recours_1' %}selected{% endif %}>Recours 1ère session uniquement</option>
+                        <option value="recours_session_2" {% if filtre_session == 'recours_session_2' %}selected{% endif %}>Recours 2ème session uniquement</option>
+                </select>
+            </div>
+            <div id="dashboardExactDate" {% if filtre_date_mode not in ('today', 'exact') %}hidden{% endif %}>
+                <label>Date précise</label>
+                <input type="date" name="date" value="{{ filtre_date or (today_str if filtre_date_mode == 'today' else '') }}">
+            </div>
+            <div id="dashboardDateRange" class="date-range-fields" {% if filtre_date_mode != 'range' %}hidden{% endif %}>
+                <div>
+                    <label>Du</label>
+                    <input type="date" name="date_debut" value="{{ filtre_date_debut }}">
+                </div>
+                <div>
+                    <label>Au</label>
+                    <input type="date" name="date_fin" value="{{ filtre_date_fin }}">
+                </div>
+            </div>
+            <div>
+                <button type="submit" class="btn-filtre apply">🔍 Filtrer</button>
+            </div>
+            {% if filtre_dept or filtre_promo or filtre_date_mode != 'today' or filtre_date_debut or filtre_date_fin or filtre_session %}
+            <div>
+                <a href="{{ url_for('decanat_bulletins_dashboard') }}" class="btn-filtre reset">✕ Réinitialiser</a>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+
+    <!-- Bouton télécharger TOUT le résultat filtré -->
+    {% if stats_rows %}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.6rem;">
+        <span style="font-size:.85rem;color:#555;">
+            {{ stats_rows | length }} session(s) •
+            <span class="date-chip">📅 Payés {{ date_filter.label|lower }} : {{ stats_rows | sum(attribute='payes_date') }}</span>
+        </span>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+            <a href="{{ url_for('decanat_bulletins_rapport_preview',
+                    dept=filtre_dept, promo=filtre_promo, date=filtre_date,
+                    date_mode=filtre_date_mode, date_debut=filtre_date_debut,
+                    date_fin=filtre_date_fin, session=filtre_session) }}"
+               class="btn-dl"
+               style="background:#198754;color:white;">
+                📋 Rapport PDF paiements
+            </a>
+            {% set zip_url = url_for('decanat_bulletins_zip_filtre',
+                dept=filtre_dept, promo=filtre_promo) %}
+            <a href="{{ zip_url }}" class="btn-dl zip">
+                ⬇ Bulletins ZIP
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if stats_rows %}
+    <table class="table-bul">
+        <thead>
+            <tr>
+                <th>Département</th>
+                <th>Promotion</th>
+                <th>Total</th>
+                <th>Payés au total</th>
+                <th>Payés {{ date_filter.label|lower }}</th>
+                <th>En attente</th>
+                <th>Progression</th>
+                <th>Recettes (FC)</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in stats_rows %}
+            {% set pct = ((row.payes / row.total * 100) | int) if row.total > 0 else 0 %}
+            <tr>
+                <td style="font-size:.82rem;color:#555;">{{ row.bs.departement or '—' }}</td>
+                <td><strong>{{ row.bs.promotion }}</strong>
+                    <div style="font-size:.75rem;color:#888;">{{ row.bs.annee }} · {{ row.bs.semestre }}</div>
+                    <div style="font-size:.75rem;color:#1a4db8;font-weight:700;">
+                        {% if row.bs.type_grille|default('initial') == 'recours' %}Recours 1ère session
+                        {% elif row.bs.type_grille|default('initial') == 'session_2' %}Délibération 2ème session
+                        {% elif row.bs.type_grille|default('initial') == 'recours_session_2' %}Recours 2ème session
+                        {% else %}Délibération 1ère session{% endif %}
+                    </div>
+                </td>
+                <td style="font-weight:700;">{{ row.total }}</td>
+                <td>
+                    <span class="badge-ok">{{ row.payes }}</span>
+                </td>
+                <td>
+                    {% if row.payes_date > 0 %}
+                        <span class="badge-today">{{ row.payes_date }}</span>
+                    {% else %}
+                        <span style="color:#aaa;">0</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.en_attente > 0 %}
+                        <span class="badge-warn">{{ row.en_attente }}</span>
+                    {% else %}
+                        <span style="color:#198754;font-weight:700;">0 ✓</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display:flex;align-items:center;gap:.5rem;">
+                        <div class="prog-wrap">
+                            <div class="prog-fill" style="width:{{ pct }}%;"></div>
+                        </div>
+                        <span style="font-size:.78rem;color:#555;">{{ pct }}%</span>
+                    </div>
+                </td>
+                <td style="font-weight:700;">{{ "{:,}".format(row.recettes) }} FC</td>
+                <td style="white-space:nowrap;">
+                    <a href="{{ url_for('decanat_bulletins_zip_filtre', sid=row.bs.id) }}"
+                       class="btn-dl zip" title="Télécharger ZIP de cette promotion">⬇ ZIP</a>
+                    <a href="{{ url_for('decanat_bulletins_session_detail', sid=row.bs.id) }}"
+                       class="btn-dl detail" style="margin-left:.3rem;">Détail →</a>
+                    {% if row.payes > 0 %}
+                    <a href="{{ url_for('decanat_bulletins_rapport_preview',
+                        dept=row.bs.departement or '', promo=row.bs.promotion,
+                        date_mode=filtre_date_mode, date=filtre_date,
+                        date_debut=filtre_date_debut, date_fin=filtre_date_fin,
+                        session=filtre_session) }}"
+                       class="btn-dl" style="margin-left:.3rem;background:#198754;color:white;"
+                       title="Voir la liste des {{ row.payes }} étudiant(s) ayant payé">
+                        👥 Payés ({{ row.payes }})
+                    </a>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <!-- Ligne totaux -->
+        {% if stats_rows | length > 1 %}
+        <tfoot>
+            <tr style="background:#f0f4ff;font-weight:700;">
+                <td colspan="2">TOTAL</td>
+                <td>{{ stats_rows | sum(attribute='total') }}</td>
+                <td><span class="badge-ok">{{ stats_rows | sum(attribute='payes') }}</span></td>
+                <td><span class="badge-today">{{ stats_rows | sum(attribute='payes_date') }}</span></td>
+                <td><span class="badge-warn">{{ stats_rows | sum(attribute='en_attente') }}</span></td>
+                <td></td>
+                <td>{{ "{:,}".format(stats_rows | sum(attribute='recettes')) }} FC</td>
+                <td></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    {% else %}
+    <p style="color:#888;text-align:center;padding:2rem;">Aucune session ne correspond aux critères sélectionnés.</p>
+    {% endif %}
+</div>
+
+<!-- ══ Suivi indépendant par matricule officiel ══ -->
+<div class="panel">
+    <h3>🧾 Suivi individuel par matricule officiel</h3>
+    <p style="color:#666;font-size:.85rem;margin-top:-.4rem;">
+        Chaque colonne correspond à une étape indépendante. « Absent » signifie
+        que l'étudiant n'est pas présent dans cette grille : aucun paiement
+        n'est exigé pour cette étape.
+    </p>
+    {% if suivi_etudiants %}
+    <div style="overflow-x:auto;">
+    <table class="table-bul">
+        <thead>
+            <tr>
+                <th>Matricule officiel</th>
+                <th>Étudiant</th>
+                <th>Délibération 1ère session<br><small>B-</small></th>
+                <th>Recours 1ère session<br><small>RR-</small></th>
+                <th>Délibération 2ème session<br><small>S2-</small></th>
+                <th>Recours 2ème session<br><small>R2-</small></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in suivi_etudiants %}
+            <tr>
+                <td style="font-family:monospace;font-weight:700;color:#0d2666;">
+                    {{ row.matricule }}
+                </td>
+                <td><strong>{{ row.nom or '—' }}</strong></td>
+                {% for step in ['initial', 'recours', 'session_2', 'recours_session_2'] %}
+                <td>
+                    {% if row[step].statut == 'paye' %}
+                        <span class="badge-ok">✅ Payé</span>
+                    {% elif row[step].statut == 'attente' %}
+                        <span class="badge-warn">🔒 En attente</span>
+                    {% else %}
+                        <span style="background:#eef0f3;color:#6c757d;padding:.18rem .55rem;
+                                     border-radius:20px;font-size:.78rem;font-weight:700;">
+                            — Absent
+                        </span>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p style="color:#888;text-align:center;padding:1.5rem;">
+        Aucun matricule officiel ou bulletin importé pour ces critères.
+    </p>
+    {% endif %}
+</div>
+
+<!-- Scans suspects -->
+<div class="panel" style="border-left: 4px solid #dc3545;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;border-bottom:2px solid #e8ecf0;padding-bottom:.6rem;margin-bottom:1rem;">
+        <h3 style="color:#dc3545;margin:0;border:none;padding:0;">⚠️ Tentatives de scan suspectes
+            <span style="font-size:.82rem;font-weight:400;color:#888;margin-left:.6rem;">
+                {{ nb_suspects_total }} au total — 50 dernières affichées
+            </span>
+        </h3>
+        {% if nb_nouveaux_suspects and nb_nouveaux_suspects > 0 %}
+        <form method="post" action="{{ url_for('decanat_scans_acknowledge') }}" style="margin:0;">
+            <button type="submit"
+                    style="background:#dc3545;color:white;border:none;border-radius:6px;padding:.38rem .95rem;font-size:.83rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem;">
+                ✓ Marquer tout comme vu
+                <span style="background:rgba(255,255,255,.25);border-radius:20px;padding:.05rem .45rem;font-size:.75rem;">
+                    {{ nb_nouveaux_suspects if nb_nouveaux_suspects < 100 else '99+' }}
+                </span>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Barre filtres + export CSV -->
+    <form method="get" action="{{ url_for('decanat_bulletins_dashboard') }}" id="scan-filter-form">
+        <input type="hidden" name="dept"  value="{{ filtre_dept }}">
+        <input type="hidden" name="promo" value="{{ filtre_promo }}">
+        <input type="hidden" name="date"  value="{{ filtre_date }}">
+        {% if show_dismissed %}<input type="hidden" name="show_dismissed" value="1">{% endif %}
+        <div class="filtre-bar" style="margin-bottom:.8rem;">
+            <div>
+                <label>Type de résultat</label>
+                <select name="scan_type" id="scan_type">
+                    <option value="">— Tous les suspects —</option>
+                    <option value="invalide"     {% if filtre_scan_type == 'invalide'     %}selected{% endif %}>Code inconnu</option>
+                    <option value="deja_utilise" {% if filtre_scan_type == 'deja_utilise' %}selected{% endif %}>Déjà utilisé</option>
+                </select>
+            </div>
+            <div>
+                <label>Du</label>
+                <input type="date" name="scan_date_debut" value="{{ filtre_scan_date_debut or '' }}">
+            </div>
+            <div>
+                <label>Au</label>
+                <input type="date" name="scan_date_fin" value="{{ filtre_scan_date_fin or '' }}">
+            </div>
+            <div>
+                <button type="submit" class="btn-filtre apply">🔍 Filtrer</button>
+            </div>
+            {% if filtre_scan_type or filtre_scan_date_debut or filtre_scan_date_fin %}
+            <div>
+                <a href="{{ url_for('decanat_bulletins_dashboard') }}" class="btn-filtre reset">✕ Réinitialiser</a>
+            </div>
+            {% endif %}
+            <div style="margin-left:auto;display:flex;gap:.5rem;align-items:center;">
+                {% if show_dismissed %}
+                <a href="{{ url_for('decanat_bulletins_dashboard',
+                        dept=filtre_dept, promo=filtre_promo, date=filtre_date,
+                        scan_type=filtre_scan_type,
+                        scan_date_debut=filtre_scan_date_debut,
+                        scan_date_fin=filtre_scan_date_fin) }}"
+                   class="btn-filtre reset"
+                   style="text-decoration:none;white-space:nowrap;">
+                    🙈 Masquer renvoyés
+                </a>
+                {% else %}
+                <a href="{{ url_for('decanat_bulletins_dashboard',
+                        dept=filtre_dept, promo=filtre_promo, date=filtre_date,
+                        scan_type=filtre_scan_type,
+                        scan_date_debut=filtre_scan_date_debut,
+                        scan_date_fin=filtre_scan_date_fin,
+                        show_dismissed='1') }}"
+                   class="btn-filtre reset"
+                   style="text-decoration:none;white-space:nowrap;">
+                    👁 Afficher renvoyés
+                </a>
+                {% endif %}
+                <a href="{{ url_for('decanat_scans_export_csv',
+                        type=filtre_scan_type or '',
+                        date_debut=filtre_scan_date_debut or '',
+                        date_fin=filtre_scan_date_fin or '') }}"
+                   class="btn-dl"
+                   style="background:#198754;color:white;text-decoration:none;padding:.42rem 1.1rem;">
+                    ⬇ Exporter CSV
+                </a>
+            </div>
+        </div>
+    </form>
+
+    {% if scans_suspects %}
+    <table class="table-bul">
+        <thead>
+            <tr>
+                <th>Date / Heure</th>
+                <th>Code scanné</th>
+                <th>Résultat</th>
+                <th>Matricule saisi</th>
+                <th>Nom étudiant</th>
+                <th>IP source</th>
+                <th style="width:90px;">Action</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for log in scans_suspects %}
+            <tr {% if log.dismissed %}style="opacity:.5;"{% endif %}>
+                <td style="white-space:nowrap;font-size:.8rem;">
+                    {{ log.date_scan.strftime('%d/%m/%Y %H:%M:%S') }}
+                </td>
+                <td style="font-family:monospace;font-size:.83rem;">{{ log.code }}</td>
+                <td>
+                    {% if log.resultat == 'invalide' %}
+                        <span class="badge-warn">Code inconnu</span>
+                    {% elif log.resultat == 'deja_utilise' %}
+                        <span style="background:#dc3545;color:white;padding:.18rem .55rem;border-radius:20px;font-size:.78rem;font-weight:700;">Déjà utilisé</span>
+                    {% else %}
+                        <span class="badge-ok">{{ log.resultat }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ log.matricule or '—' }}</td>
+                <td>{{ log.nom_etudiant or '—' }}</td>
+                <td style="font-size:.8rem;color:#888;">{{ log.ip or '—' }}</td>
+                <td>
+                    {% if not log.dismissed %}
+                    <form method="post"
+                          action="{{ url_for('decanat_scan_dismiss', scan_id=log.id) }}"
+                          style="margin:0;">
+                        <input type="hidden" name="dept"            value="{{ filtre_dept }}">
+                        <input type="hidden" name="promo"           value="{{ filtre_promo }}">
+                        <input type="hidden" name="date"            value="{{ filtre_date }}">
+                        <input type="hidden" name="scan_type"       value="{{ filtre_scan_type }}">
+                        <input type="hidden" name="scan_date_debut" value="{{ filtre_scan_date_debut }}">
+                        <input type="hidden" name="scan_date_fin"   value="{{ filtre_scan_date_fin }}">
+                        <input type="hidden" name="show_dismissed"  value="{{ '1' if show_dismissed else '' }}">
+                        <button type="submit"
+                                style="background:#6c757d;color:white;border:none;border-radius:5px;
+                                       padding:.22rem .65rem;font-size:.78rem;cursor:pointer;"
+                                title="Renvoyer ce scan (le cacher de la liste active)">
+                            ✕ Renvoyer
+                        </button>
+                    </form>
+                    {% else %}
+                    <span style="font-size:.75rem;color:#aaa;font-style:italic;">Renvoyé</span>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#888;text-align:center;padding:1.5rem;">Aucun scan suspect enregistré pour ces critères.</p>
+    {% endif %}
+</div>
+
+<!-- Paramètres d'alerte -->
+<div class="panel" style="border-left: 4px solid #1a4db8;">
+    <h3>⚙️ Paramètres des alertes e-mail</h3>
+    <form method="post" action="{{ url_for('decanat_dashboard_settings') }}" style="max-width:640px;">
+
+        <!-- Adresse de destination -->
+        <div style="margin-bottom:1.2rem;">
+            <label style="display:block;font-size:.88rem;font-weight:600;color:#333;margin-bottom:.4rem;">
+                📧 Adresse e-mail de réception des alertes
+            </label>
+            <input type="email" name="alert_email"
+                   value="{{ alert_email_current or '' }}"
+                   placeholder="ex : decanat@unilu.ac.cd"
+                   style="width:100%;box-sizing:border-box;padding:.45rem .8rem;border:1px solid #c8d0e0;border-radius:6px;font-size:.9rem;">
+            <p style="font-size:.78rem;color:#888;margin:.3rem 0 0;">
+                {% if alert_email_current %}
+                    Adresse actuelle : <strong>{{ alert_email_current }}</strong>
+                {% else %}
+                    Aucune adresse configurée — les alertes ne seront pas envoyées.
+                {% endif %}
+            </p>
+        </div>
+
+        <!-- Séparateur SMTP -->
+        <div style="border-top:1px solid #e0e4ea;margin:1rem 0 1.1rem;"></div>
+        <p style="font-size:.88rem;font-weight:700;color:#0d2666;margin:0 0 .9rem;">
+            🔧 Serveur d'envoi (SMTP)
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 120px;gap:.8rem;margin-bottom:.8rem;">
+            <div>
+                <label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:.3rem;">
+                    Hôte SMTP
+                </label>
+                <input type="text" name="smtp_host"
+                       value="{{ smtp_host_current or '' }}"
+                       placeholder="ex : smtp.gmail.com"
+                       style="width:100%;box-sizing:border-box;padding:.42rem .75rem;border:1px solid #c8d0e0;border-radius:6px;font-size:.88rem;">
+            </div>
+            <div>
+                <label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:.3rem;">
+                    Port
+                </label>
+                <input type="number" name="smtp_port"
+                       value="{{ smtp_port_current or '587' }}"
+                       placeholder="587"
+                       min="1" max="65535"
+                       style="width:100%;box-sizing:border-box;padding:.42rem .75rem;border:1px solid #c8d0e0;border-radius:6px;font-size:.88rem;">
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.8rem;">
+            <div>
+                <label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:.3rem;">
+                    Utilisateur SMTP (expéditeur)
+                </label>
+                <input type="email" name="smtp_user"
+                       value="{{ smtp_user_current or '' }}"
+                       placeholder="ex : alerts@unilu.ac.cd"
+                       style="width:100%;box-sizing:border-box;padding:.42rem .75rem;border:1px solid #c8d0e0;border-radius:6px;font-size:.88rem;">
+            </div>
+            <div>
+                <label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:.3rem;">
+                    Mot de passe SMTP
+                </label>
+                <input type="password" name="smtp_password"
+                       placeholder="Laisser vide pour conserver l'actuel"
+                       autocomplete="new-password"
+                       style="width:100%;box-sizing:border-box;padding:.42rem .75rem;border:1px solid #c8d0e0;border-radius:6px;font-size:.88rem;">
+                <p style="font-size:.75rem;color:#aaa;margin:.25rem 0 0;">
+                    Laisser vide pour ne pas modifier le mot de passe enregistré.
+                </p>
+            </div>
+        </div>
+
+        <div style="margin-bottom:1.2rem;">
+            <label style="display:block;font-size:.82rem;font-weight:600;color:#444;margin-bottom:.4rem;">
+                Mode de sécurité (TLS)
+            </label>
+            <div style="display:flex;gap:1.2rem;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.87rem;cursor:pointer;">
+                    <input type="radio" name="smtp_mode" value="starttls"
+                           {% if (smtp_mode_current or 'starttls') == 'starttls' %}checked{% endif %}>
+                    <span><strong>STARTTLS</strong> — port 587 (recommandé)</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.87rem;cursor:pointer;">
+                    <input type="radio" name="smtp_mode" value="ssl"
+                           {% if smtp_mode_current == 'ssl' %}checked{% endif %}>
+                    <span><strong>SSL/TLS</strong> — port 465</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:.4rem;font-size:.87rem;cursor:pointer;">
+                    <input type="radio" name="smtp_mode" value="none"
+                           {% if smtp_mode_current == 'none' %}checked{% endif %}>
+                    <span><strong>Aucun chiffrement</strong> — relais local</span>
+                </label>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;">
+            <button type="submit" class="btn-filtre apply">
+                💾 Enregistrer les paramètres
+            </button>
+        </div>
+        {% if smtp_host_current %}
+        <p style="font-size:.78rem;color:#555;margin:.7rem 0 0;">
+            Serveur actuel : <strong>{{ smtp_host_current }}</strong> : <strong>{{ smtp_port_current or 587 }}</strong>
+            — expéditeur : <strong>{{ smtp_user_current or '—' }}</strong>
+        </p>
+        {% else %}
+        <p style="font-size:.78rem;color:#aaa;margin:.7rem 0 0;">
+            Aucun serveur SMTP configuré — les alertes e-mail sont désactivées.
+        </p>
+        {% endif %}
+    </form>
+
+    <!-- Bouton Test séparé (n'écrase pas le formulaire principal) -->
+    {% if smtp_host_current and smtp_user_current and alert_email_current %}
+    <form method="post" action="{{ url_for('decanat_test_smtp') }}" style="margin-top:1rem;">
+        <button type="submit"
+                style="background:#6c757d;color:white;border:none;border-radius:6px;padding:.4rem 1rem;font-size:.85rem;font-weight:600;cursor:pointer;">
+            📨 Envoyer un e-mail de test
+        </button>
+        <span style="font-size:.78rem;color:#888;margin-left:.5rem;">
+            Un message de test sera envoyé à {{ alert_email_current }}.
+        </span>
+    </form>
+    {% endif %}
+</div>
+
+<!-- Étudiants n'ayant pas encore payé -->
+<div class="panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.6rem;border-bottom:2px solid #e8ecf0;padding-bottom:.6rem;margin-bottom:1rem;">
+        <h3 style="margin:0;border:none;padding:0;">
+            ⏳ Étudiants n'ayant pas encore payé ({{ non_payes | length }})
+            {% if filtre_dept or filtre_promo %}
+            <span style="font-size:.78rem;font-weight:400;color:#1a4db8;margin-left:.5rem;">
+                — filtre :
+                {% if filtre_dept %}{{ filtre_dept }}{% endif %}
+                {% if filtre_dept and filtre_promo %} / {% endif %}
+                {% if filtre_promo %}{{ filtre_promo }}{% endif %}
+            </span>
+            {% endif %}
+        </h3>
+        {% if non_payes %}
+        <a href="{{ url_for('decanat_non_payes_export_csv', dept=filtre_dept, promo=filtre_promo) }}"
+           class="btn-dl"
+           style="background:#198754;color:white;text-decoration:none;padding:.42rem 1.1rem;">
+            ⬇ Exporter CSV
+        </a>
+        {% endif %}
+    </div>
+    {% if non_payes %}
+    <table class="table-bul">
+        <thead>
+            <tr>
+                <th>Matricule</th>
+                <th>Nom</th>
+                <th>Département</th>
+                <th>Promotion / Session</th>
+                <th>Montant dû (FC)</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bd in non_payes[:50] %}
+            <tr>
+                <td>{{ bd.matricule }}</td>
+                <td>{{ bd.nom }}</td>
+                <td style="font-size:.82rem;color:#555;">{{ bd.bul_session.departement or '—' }}</td>
+                <td style="font-size:.82rem;color:#666;">{{ bd.bul_session.promotion }}<br>
+                    <span style="color:#aaa;">{{ bd.bul_session.nom }}</span></td>
+                <td style="font-weight:700;">{{ "{:,}".format(bd.bul_session.montant_fc) }}</td>
+            </tr>
+        {% endfor %}
+        {% if non_payes | length > 50 %}
+            <tr><td colspan="5" style="text-align:center;color:#888;font-style:italic;">
+                … et {{ non_payes | length - 50 }} autres étudiants
+            </td></tr>
+        {% endif %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:#198754;font-weight:600;text-align:center;padding:1.5rem;">
+        🎉 Tous les étudiants ont réglé leurs frais de consultation !
+    </p>
+    {% endif %}
+</div>
+<script>
+function toggleDashboardDateFields() {
+    const mode = document.getElementById('dashboardDateMode').value;
+    document.getElementById('dashboardExactDate').hidden =
+        !['today', 'exact'].includes(mode);
+    document.getElementById('dashboardDateRange').hidden = mode !== 'range';
+}
+document.addEventListener('DOMContentLoaded', toggleDashboardDateFields);
+</script>
+{% endblock %}

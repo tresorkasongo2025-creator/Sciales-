@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}Relevés de cotes — E-SCIALES UNILU{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine:#0d2666; --violet:#6f42c1; }
+.rel-wrap { max-width:1000px; margin:1.5rem auto; }
+.rel-hero { background:linear-gradient(135deg,#2e155d,#6f42c1); color:#fff;
+    padding:2rem; border-radius:16px; margin-bottom:1.2rem; }
+.rel-hero h1 { margin:0 0 .45rem; font-size:1.7rem; }
+.rel-hero p { margin:0; opacity:.9; }
+.rel-card { background:#fff; border-radius:14px; box-shadow:0 3px 18px rgba(0,0,0,.09);
+    padding:1.5rem; margin-bottom:1.2rem; }
+.rel-card h2 { color:var(--marine); margin:.1rem 0 .8rem; font-size:1.15rem; }
+.rel-input { width:100%; box-sizing:border-box; padding:.85rem 1rem; border:2px solid #d9dce7;
+    border-radius:10px; font-size:1rem; text-transform:uppercase; letter-spacing:.8px; }
+.rel-btn { border:0; border-radius:9px; padding:.75rem 1.1rem; color:#fff; font-weight:700;
+    cursor:pointer; text-decoration:none; display:inline-block; }
+.rel-primary { background:var(--violet); }
+.rel-blue { background:var(--marine); }
+.rel-list a { display:block; padding:1rem; margin:.65rem 0; border-left:4px solid var(--violet);
+    background:#f7f3ff; color:#32156b; text-decoration:none; border-radius:8px; }
+.rel-meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:.6rem;
+    margin:1rem 0; }
+.rel-meta div { background:#f7f8fc; padding:.7rem .85rem; border-radius:8px; }
+.rel-meta small { display:block; color:#777; font-size:.75rem; }
+.rel-meta strong { color:var(--marine); }
+.rel-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+.rel-table th { background:var(--marine); color:#fff; padding:.55rem; text-align:left; }
+.rel-table td { padding:.55rem; border-bottom:1px solid #edf0f5; }
+.rel-table tr:nth-child(even) td { background:#fafbff; }
+.rel-official-preview { position:relative; overflow:hidden; user-select:none; -webkit-user-select:none;
+    background:#fff; border:1px solid #dce2f0; padding:.4rem; }
+.rel-official-preview img { display:block; width:100%; height:auto; pointer-events:none; }
+.rel-official-preview::before { content:"APERÇU — NON OFFICIEL";
+    position:absolute; top:44%; left:-8%; transform:rotate(-24deg); color:rgba(111,66,193,.20);
+    font-size:2.1rem; font-weight:900; white-space:nowrap; pointer-events:none; z-index:2; }
+.rel-security { background:#fff8e1; border-left:4px solid #d39e00; padding:.85rem 1rem;
+    border-radius:0 8px 8px 0; color:#5c4800; font-size:.84rem; margin:1rem 0; }
+.rel-command { background:#f3edff; border:1px solid #cfb9f4; padding:1rem; border-radius:10px; }
+.rel-scanner { display:none; margin-top:.8rem; background:#f6f3ff; padding:1rem; border-radius:10px; }
+#relVideo { width:100%; max-width:360px; border-radius:10px; background:#111; }
+@media (max-width:650px) { .rel-wrap { margin:.8rem; } .rel-hero { padding:1.4rem; } }
+@media print { body * { visibility:hidden !important; } body::after { content:"Impression interdite — aperçu protégé"; visibility:visible; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rel-wrap" oncontextmenu="return false">
+    {% if mode in ['disabled', 'unavailable'] %}
+    <div class="rel-hero">
+        <h1>📄 Relevés de cotes</h1>
+        <p>Consultation des relevés de cotes</p>
+    </div>
+    <div class="rel-card" style="text-align:center;">
+        <div style="font-size:3rem;">🔒</div>
+        <h2>Relevé indisponible pour l'instant</h2>
+        <p style="color:#666;">
+            {% if matricule %}
+            Le relevé associé au matricule <strong>{{ matricule }}</strong>
+            est indisponible pour l'instant.
+            {% else %}
+            Le DÉCANAT a temporairement désactivé l’accès public aux relevés de cotes.
+            {% endif %}
+            Veuillez réessayer ultérieurement ou contacter la Faculté.
+        </p>
+        <a class="rel-btn rel-primary" href="{{ url_for('releves_portail') }}">
+            Saisir un autre matricule
+        </a>
+    </div>
+    {% else %}
+    <div class="rel-hero">
+        <h1>📄 Relevés de cotes</h1>
+        <p>Consultez l’aperçu de votre relevé avec votre matricule et commandez le document officiel auprès de la Faculté.</p>
+    </div>
+
+    {% if mode == 'search' %}
+    <div class="rel-card">
+        <h2>🔐 Accéder avec mon matricule</h2>
+        <p style="color:#666;font-size:.9rem;">Le relevé est consultable uniquement après vérification de votre matricule.</p>
+        <form method="POST">
+            <input class="rel-input" name="matricule" placeholder="Ex. ETU1234" autocomplete="off" required>
+            <button class="rel-btn rel-primary" style="margin-top:.8rem;width:100%;" type="submit">
+                Voir mon relevé →
+            </button>
+        </form>
+    </div>
+    {% elif mode == 'list' %}
+    <div class="rel-card rel-list">
+        <h2>Plusieurs relevés pour {{ matricule }}</h2>
+        {% for bd in resultats %}
+        <a href="{{ url_for('releves_preview', bid=bd.id, matricule=matricule) }}">
+            <strong>{{ bd.bul_session.nom or 'Session académique' }}</strong><br>
+            <small>{{ bd.bul_session.promotion }} · {{ bd.bul_session.annee }} · {{ bd.bul_session.semestre }}</small>
+        </a>
+        {% endfor %}
+    </div>
+    {% elif mode == 'preview' %}
+    <div class="rel-card">
+        <h2>👁 Aperçu du relevé — {{ bd.nom }}</h2>
+        <div class="rel-meta">
+            <div><small>Matricule</small><strong>{{ bd.matricule }}</strong></div>
+            <div><small>Promotion</small><strong>{{ bs.promotion }}</strong></div>
+            <div><small>Année</small><strong>{{ bs.annee }}</strong></div>
+            <div><small>Session</small><strong>{{ bs.session_acad or bs.semestre }}</strong></div>
+        </div>
+        <div class="rel-security">
+            🔒 Ceci est un aperçu protégé et non un fichier officiel. Le téléchargement, l’impression,
+            la copie et l’enregistrement d’écran sont désactivés dans l’interface.
+            Une photo prise avec un autre appareil ne peut pas être bloquée techniquement ; le filigrane
+            nominatif permet d’identifier toute reproduction.
+        </div>
+        {% if commande_ok %}
+        <div style="background:#d1f0e0;color:#0f5132;padding:.8rem;border-radius:8px;margin-bottom:1rem;">
+            ✅ Votre commande a été enregistrée. Le DÉCANAT pourra suivre son traitement.
+        </div>
+        {% endif %}
+        {% if commande_error %}
+        <div style="background:#fde8e8;color:#6b1313;padding:.8rem;border-radius:8px;margin-bottom:1rem;">
+            ⚠ {{ commande_error }}
+        </div>
+        {% endif %}
+
+        <div class="rel-official-preview" id="releveProtectedPreview">
+            <img
+                src="{{ url_for('releves_preview_image', bid=bd.id, matricule=matricule) }}"
+                alt="Aperçu protégé du relevé officiel de {{ bd.nom }}"
+                draggable="false"
+            >
+        </div>
+
+        {% if not commande %}
+        <div class="rel-command" style="margin-top:1rem;">
+            <h2>🧾 Commander mon relevé officiel</h2>
+            <p style="font-size:.88rem;color:#555;">Payez auprès de la comptabilité, puis scannez le QR code de votre reçu <strong>REL-</strong>.</p>
+            <button class="rel-btn rel-blue" type="button" onclick="startReleveScanner()">📷 Scanner mon reçu</button>
+            <div id="releveScanner" class="rel-scanner">
+                <video id="relVideo" autoplay playsinline muted></video>
+                <canvas id="relCanvas" style="display:none;"></canvas>
+                <p id="relScanStatus">Positionnez le QR code du reçu dans le cadre.</p>
+                <button class="rel-btn" style="background:#dc3545;" type="button" onclick="stopReleveScanner()">Arrêter</button>
+            </div>
+            <form method="POST" action="{{ url_for('releves_commander') }}" style="margin-top:1rem;">
+                <input type="hidden" name="bid" value="{{ bd.id }}">
+                <input type="hidden" name="matricule" value="{{ matricule }}">
+                <label style="font-size:.82rem;color:#555;">Code détecté (si nécessaire)</label>
+                <input class="rel-input" id="relReceiptCode" name="receipt_code"
+                       placeholder="/scan/CODE ou numéro REL-..." required>
+                <button class="rel-btn rel-primary" style="margin-top:.7rem;" type="submit">
+                    Envoyer ma commande
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="rel-command" style="margin-top:1rem;">
+            ✅ Commande enregistrée — statut : <strong>{{ commande.statut }}</strong>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if mode == 'preview' %}
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+let releveStream = null, releveTimer = null;
+function startReleveScanner() {
+    const panel = document.getElementById('releveScanner');
+    panel.style.display = 'block';
+    navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream) {
+        releveStream = stream;
+        const video = document.getElementById('relVideo');
+        video.srcObject = stream;
+        releveTimer = setInterval(function() {
+            if (video.readyState < 2) return;
+            const canvas = document.getElementById('relCanvas');
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const code = jsQR(ctx.getImageData(0,0,canvas.width,canvas.height).data,
+                              canvas.width, canvas.height);
+            if (code && code.data) {
+                document.getElementById('relReceiptCode').value = code.data;
+                document.getElementById('relScanStatus').textContent = '✅ Reçu détecté. Envoyez la commande.';
+                stopReleveScanner();
+            }
+        }, 250);
+    }).catch(function() {
+        document.getElementById('relScanStatus').textContent = 'Caméra indisponible. Saisissez le code imprimé du reçu.';
+    });
+}
+function stopReleveScanner() {
+    clearInterval(releveTimer);
+    if (releveStream) releveStream.getTracks().forEach(t => t.stop());
+    releveStream = null; releveTimer = null;
+    const panel = document.getElementById('releveScanner');
+    if (panel) panel.style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && ['s','p','u'].includes(e.key.toLowerCase())) {
+        e.preventDefault(); alert('Cette action est désactivée sur l’aperçu protégé.');
+    }
+});
+document.addEventListener('visibilitychange', function() {
+    const preview = document.getElementById('releveProtectedPreview');
+    if (preview) preview.style.filter = document.hidden ? 'blur(18px)' : '';
+});
+</script>
+{% endif %}
+{% endblock %}

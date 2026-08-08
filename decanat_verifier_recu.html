@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Vérifier un reçu — DÉCANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+.verify-wrap { max-width: 900px; margin: 2rem auto; }
+.verify-hero { background:linear-gradient(135deg,#0d2666,#1a4db8); color:white;
+    padding:1.5rem 2rem; border-radius:14px; margin-bottom:1rem; }
+.verify-hero h2 { margin:0 0 .3rem; }
+.verify-card { background:white; border-radius:12px; padding:1.4rem 1.6rem;
+    box-shadow:0 2px 12px rgba(0,0,0,.07); margin-bottom:1rem; }
+.verify-form { display:flex; gap:.7rem; flex-wrap:wrap; align-items:end; }
+.verify-form label { display:block; font-size:.78rem; font-weight:700; margin-bottom:.25rem; }
+.verify-form input { min-width:320px; padding:.65rem .8rem; border:1.5px solid #c8d0e0;
+    border-radius:8px; font-size:.92rem; }
+.verify-btn { padding:.65rem 1.1rem; border:0; border-radius:8px; background:#1a4db8;
+    color:white; font-weight:700; cursor:pointer; }
+.scan-btn { padding:.65rem 1.1rem; border:0; border-radius:8px; background:#198754;
+    color:white; font-weight:700; cursor:pointer; }
+.qr-panel { display:none; margin-top:1rem; padding:1rem; background:#f7f9ff;
+    border-radius:10px; text-align:center; }
+.qr-panel video { max-width:100%; width:420px; border-radius:10px; background:#111; }
+.verify-status { padding:1rem 1.2rem; border-radius:10px; margin-bottom:1rem; }
+.verify-status.ok { background:#d1f5e0; border:1.5px solid #63c78b; color:#155d32; }
+.verify-status.used { background:#fde2e2; border:1.5px solid #e28a8a; color:#7b1e1e; }
+.verify-status.invalid { background:#fff3cd; border:1.5px solid #e8c65b; color:#725500; }
+.verify-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.7rem; }
+.verify-row { padding:.6rem .75rem; background:#f7f9ff; border-radius:7px; }
+.verify-row small { display:block; color:#777; font-size:.72rem; margin-bottom:.15rem; }
+.verify-row strong { color:#0d2666; word-break:break-word; }
+.verify-back { color:#1a4db8; text-decoration:none; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verify-wrap">
+    <div class="verify-hero">
+        <h2>🔎 Vérifier un reçu</h2>
+        <p style="margin:0;opacity:.88;">Référence imprimée ou code QR — contrôle d'utilisation et d'identité</p>
+    </div>
+
+    <div class="verify-card">
+        <form method="POST" class="verify-form">
+            <div style="flex:1;">
+                <label for="recherche">Numéro du reçu ou QR code</label>
+                <input id="recherche" name="recherche" value="{{ recherche or '' }}"
+                       placeholder="B1-RI-001-S2-26 ou /scan/CODE" required autofocus>
+            </div>
+            <button class="verify-btn" type="submit">🔍 Vérifier</button>
+            <button class="scan-btn" type="button" onclick="startReceiptScanner()">📷 Scanner le QR</button>
+        </form>
+        <div id="qrPanel" class="qr-panel">
+            <video id="qrVideo" autoplay playsinline muted></video>
+            <canvas id="qrCanvas" style="display:none;"></canvas>
+            <p id="qrStatus" style="margin:.5rem 0 0;color:#555;font-size:.8rem;">
+                Placez le QR du reçu devant la caméra.
+            </p>
+            <button type="button" class="verify-btn" onclick="stopReceiptScanner()">✕ Arrêter</button>
+        </div>
+        <p style="color:#777;font-size:.78rem;margin:.7rem 0 0;">
+            QR accepté sous forme de code, d'URL <code>/scan/CODE</code> ou de contenu JSON.
+        </p>
+    </div>
+
+    {% if recherche and not recu %}
+    <div class="verify-status invalid">
+        <strong>❌ REÇU INTROUVABLE</strong><br>
+        Aucun reçu officiel ne correspond à cette référence ou à ce QR code.
+    </div>
+    {% endif %}
+
+    {% if recu %}
+    <div class="verify-status {{ 'used' if recu.utilise else 'ok' }}">
+        {% if recu.utilise %}
+        <strong>🚫 REÇU DÉJÀ UTILISÉ</strong><br>
+        Ce reçu ne peut plus être attribué à un autre étudiant.
+        {% else %}
+        <strong>✅ REÇU VALIDE — NON UTILISÉ</strong><br>
+        Ce reçu est encore disponible pour le service correspondant.
+        {% endif %}
+    </div>
+    <div class="verify-card">
+        <h3 style="margin-top:0;color:#0d2666;">Informations du reçu</h3>
+        <div class="verify-grid">
+            <div class="verify-row"><small>Numéro</small><strong>{{ recu.numero }}</strong></div>
+            <div class="verify-row"><small>Code QR</small><strong>{{ recu.code_qr }}</strong></div>
+            <div class="verify-row"><small>Nom de l'étudiant</small><strong>{{ recu.nom_etudiant or '—' }}</strong></div>
+            <div class="verify-row"><small>Matricule</small><strong>{{ recu.matricule_etudiant or '—' }}</strong></div>
+            <div class="verify-row"><small>Département</small><strong>{{ recu.dept or '—' }}</strong></div>
+            <div class="verify-row"><small>Montant</small><strong>{{ recu.montant }}</strong></div>
+            <div class="verify-row"><small>Date de génération</small><strong>{{ recu.date_creation.strftime('%d/%m/%Y %H:%M') if recu.date_creation else '—' }}</strong></div>
+            <div class="verify-row"><small>Session concernée</small><strong>{{ utilisation.session }}</strong></div>
+            <div class="verify-row"><small>Origine de la recherche</small><strong>{{ origine }}</strong></div>
+            <div class="verify-row"><small>Nombre de tentatives</small><strong>{{ utilisation.nb_tentatives }}</strong></div>
+            {% if recu.utilise %}
+            <div class="verify-row"><small>Premier scan / utilisation</small><strong>{{ recu.date_utilisation.strftime('%d/%m/%Y à %H:%M') if recu.date_utilisation else '—' }}</strong></div>
+            <div class="verify-row"><small>Utilisé pour quel service</small><strong>{{ utilisation.service }}</strong></div>
+            {% endif %}
+        </div>
+        <h3 style="margin:1.4rem 0 .7rem;color:#0d2666;">Historique des tentatives de scan</h3>
+        {% if utilisation.tentatives %}
+        <div style="overflow:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                <thead>
+                    <tr style="background:#0d2666;color:#fff;">
+                        <th style="padding:.5rem;text-align:left;">Date</th>
+                        <th style="padding:.5rem;text-align:left;">Résultat</th>
+                        <th style="padding:.5rem;text-align:left;">Matricule saisi</th>
+                        <th style="padding:.5rem;text-align:left;">Étudiant saisi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for tentative in utilisation.tentatives %}
+                    <tr style="border-bottom:1px solid #e5e9f2;">
+                        <td style="padding:.5rem;">{{ tentative.date_scan.strftime('%d/%m/%Y %H:%M') if tentative.date_scan else '—' }}</td>
+                        <td style="padding:.5rem;">
+                            {% if tentative.resultat == 'ok' %}✅ Valide
+                            {% elif tentative.resultat == 'deja_utilise' %}🚫 Déjà utilisé
+                            {% elif tentative.resultat == 'deja_paye' %}⚠️ Déjà payé
+                            {% else %}❌ Invalide{% endif %}
+                        </td>
+                        <td style="padding:.5rem;">{{ tentative.matricule or '—' }}</td>
+                        <td style="padding:.5rem;">{{ tentative.nom_etudiant or '—' }}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="color:#777;font-size:.84rem;margin-bottom:0;">Aucune tentative de scan enregistrée pour ce reçu.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+    <a class="verify-back" href="{{ url_for('decanat_recus') }}">← Retour à la gestion des reçus</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+let receiptStream = null;
+let receiptTimer = null;
+function stopReceiptScanner() {
+  if (receiptTimer) { clearInterval(receiptTimer); receiptTimer = null; }
+  if (receiptStream) {
+    receiptStream.getTracks().forEach(track => track.stop());
+    receiptStream = null;
+  }
+  const panel = document.getElementById('qrPanel');
+  if (panel) panel.style.display = 'none';
+}
+async function startReceiptScanner() {
+  const panel = document.getElementById('qrPanel');
+  const video = document.getElementById('qrVideo');
+  const status = document.getElementById('qrStatus');
+  if (!window.jsQR || !navigator.mediaDevices) {
+    status.textContent = 'Scanner indisponible sur cet appareil. Saisissez le numéro ou le code QR.';
+    panel.style.display = 'block';
+    return;
+  }
+  try {
+    receiptStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } }
+    });
+    video.srcObject = receiptStream;
+    panel.style.display = 'block';
+    receiptTimer = setInterval(() => {
+      if (video.readyState < video.HAVE_ENOUGH_DATA) return;
+      const canvas = document.getElementById('qrCanvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const decoded = window.jsQR(image.data, image.width, image.height, {
+        inversionAttempts: 'attemptBoth'
+      });
+      if (decoded && decoded.data) {
+        stopReceiptScanner();
+        const form = document.querySelector('.verify-form');
+        form.querySelector('input[name="recherche"]').value = decoded.data;
+        form.submit();
+      }
+    }, 250);
+  } catch (error) {
+    panel.style.display = 'block';
+    status.textContent = 'Accès caméra refusé ou indisponible. Vous pouvez saisir le code manuellement.';
+  }
+}
+window.addEventListener('beforeunload', stopReceiptScanner);
+</script>
+{% endblock %}

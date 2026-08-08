@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Rapport Paiements – Prévisualisation{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Layout ── */
+.rapport-hero {
+    background: linear-gradient(135deg, #0d2666 0%, #1a4db8 100%);
+    color: white; padding: 1.6rem 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.rapport-hero h2 { margin: 0 0 .3rem; font-size: 1.4rem; }
+.rapport-hero p  { margin: 0; opacity: .85; font-size: .9rem; }
+.rapport-actions { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; }
+
+.panel { background: white; border-radius: 12px; padding: 1.4rem 1.6rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.2rem; }
+.panel h3 { margin: 0 0 .9rem; color: #0d2666; font-size: 1rem;
+    border-bottom: 2px solid #e8ecf0; padding-bottom: .5rem; }
+
+/* ── Filtres ── */
+.filtre-bar { display: flex; flex-wrap: wrap; gap: .8rem; align-items: flex-end;
+    background: #f0f4ff; border-radius: 10px; padding: .9rem 1.1rem; margin-bottom: 1.2rem; }
+.filtre-bar label { font-size: .8rem; font-weight: 600; color: #333; display: block; margin-bottom: .2rem; }
+.filtre-bar select, .filtre-bar input[type="date"] {
+    padding: .35rem .65rem; border: 1px solid #c8d0e0; border-radius: 6px;
+    font-size: .87rem; background: white; min-width: 160px; }
+.btn-sm { padding: .38rem 1rem; border: none; border-radius: 6px; cursor: pointer;
+    font-size: .85rem; font-weight: 600; }
+.btn-primary { background: #0d2666; color: white; }
+.btn-primary:hover { background: #1a4db8; }
+.btn-reset { background: #e8ecf0; color: #444; text-decoration: none; }
+.btn-pdf { background: #c0392b; color: white; text-decoration: none;
+    padding: .5rem 1.2rem; border-radius: 8px; font-weight: 700; font-size: .9rem;
+    display: inline-flex; align-items: center; gap: .4rem; }
+.btn-pdf:hover { background: #a93226; }
+.btn-back { background: #e8ecf0; color: #444; text-decoration: none;
+    padding: .5rem 1rem; border-radius: 8px; font-size: .88rem; }
+
+/* ── Synthèse ── */
+.synth-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px,1fr));
+    gap: 1rem; margin-bottom: 1.2rem; }
+.synth-card { border-radius: 10px; padding: 1rem 1.2rem; text-align: center; }
+.synth-card.blue  { background: #e8f0ff; border: 2px solid #1a4db8; }
+.synth-card.green { background: #e6f7ee; border: 2px solid #198754; }
+.synth-card.grey  { background: #f5f5f5; border: 2px solid #aaa; }
+.synth-card .sc-num { font-size: 1.9rem; font-weight: 800; margin: .2rem 0; }
+.synth-card.blue  .sc-num { color: #1a4db8; }
+.synth-card.green .sc-num { color: #198754; }
+.synth-card .sc-lbl { font-size: .8rem; color: #555; }
+
+/* ── Tableau ── */
+.groupe-titre {
+    background: #0d2666; color: white; padding: .45rem .9rem;
+    font-weight: 700; font-size: .88rem; border-radius: 6px 6px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.section-rapport {
+    margin: 1.3rem 0 .7rem;
+    padding: .7rem 1rem;
+    border-left: 5px solid #0d2666;
+    background: #e8f0ff;
+    color: #0d2666;
+    border-radius: 7px;
+    font-size: 1rem;
+    font-weight: 800;
+}
+.section-rapport.recours {
+    border-left-color: #b76e00;
+    background: #fff3cd;
+    color: #805000;
+}
+.groupe-sous { font-size: .8rem; opacity: .85; font-weight: 400; }
+.table-rapport { width: 100%; border-collapse: collapse; margin-bottom: 1.2rem;
+    border: 1px solid #c8d0e0; }
+.table-rapport th { background: #2a4a8a; color: white; padding: .5rem .8rem;
+    font-size: .82rem; text-align: left; }
+.table-rapport td { padding: .45rem .8rem; border-bottom: 1px solid #eee; font-size: .85rem; }
+.table-rapport tr:nth-child(even) td { background: #f5f8ff; }
+.table-rapport tr:hover td { background: #e8f0ff; }
+.table-rapport tfoot td { background: #e8f0ff; font-weight: 700; color: #0d2666;
+    padding: .5rem .8rem; font-size: .87rem; border-top: 2px solid #1a4db8; }
+.montant-cell { font-weight: 700; text-align: right; }
+.badge-methode { background: #e8f0ff; color: #1a4db8; border-radius: 12px;
+    padding: .1rem .5rem; font-size: .75rem; font-weight: 600; }
+
+/* ── Total général ── */
+.total-general { background: linear-gradient(90deg, #e8f5ee, #d4edda);
+    border: 2px solid #198754; border-radius: 10px; padding: 1rem 1.5rem;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+    margin-top: .5rem; }
+.total-general .tg-nb  { font-size: 1.05rem; color: #0d2666; font-weight: 700; }
+.total-general .tg-amt { font-size: 1.4rem; color: #198754; font-weight: 800; }
+
+/* ── Vide ── */
+.empty-state { text-align: center; padding: 3rem; color: #aaa; }
+.empty-state .es-icon { font-size: 3rem; }
+.empty-state p { margin: .5rem 0 0; font-size: 1rem; }
+
+/* ── Nav ── */
+.nav-tabs-bul { display: flex; gap: 0; border-bottom: 2px solid #e0e4ea; margin-bottom: 1.5rem; }
+.nav-tab-bul { padding: .6rem 1.2rem; background: none; border: none; cursor: pointer;
+    font-size: .9rem; color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    text-decoration: none; }
+.nav-tab-bul.active { color: #0d2666; font-weight: 700; border-bottom-color: #0d2666; }
+
+@media print {
+    .no-print { display: none !important; }
+    .rapport-hero { background: #0d2666 !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero + boutons actions -->
+<div class="rapport-hero">
+    <div>
+        <h2>📋 Rapport de paiements — Bulletins</h2>
+        <p>
+            Département : <strong>{{ meta.filtre_dept }}</strong> &nbsp;·&nbsp;
+            Promotion : <strong>{{ meta.filtre_promo }}</strong> &nbsp;·&nbsp;
+            Session : <strong>{{ meta.filtre_session }}</strong> &nbsp;·&nbsp;
+            Date : <strong>{{ meta.date_cible }}</strong>
+        </p>
+    </div>
+    <div class="rapport-actions no-print">
+        <a href="{{ url_for('decanat_bulletins_rapport_pdf',
+            dept=filtre_dept, promo=filtre_promo, date=filtre_date,
+            date_mode=filtre_date_mode, date_debut=filtre_date_debut,
+            date_fin=filtre_date_fin, session=filtre_session) }}"
+           class="btn-pdf" target="_blank">
+            📄 Télécharger PDF
+        </a>
+        <a href="{{ url_for('decanat_bulletins_dashboard',
+            dept=filtre_dept, promo=filtre_promo, date=filtre_date,
+            date_mode=filtre_date_mode, date_debut=filtre_date_debut,
+            date_fin=filtre_date_fin, session=filtre_session) }}"
+           class="btn-back">← Retour</a>
+    </div>
+</div>
+
+<div class="nav-tabs-bul no-print">
+    <a href="{{ url_for('decanat_bulletins') }}" class="nav-tab-bul">📥 Import</a>
+    <a href="{{ url_for('decanat_bulletins_sessions') }}" class="nav-tab-bul">📂 Sessions</a>
+    <a href="{{ url_for('decanat_bulletins_dashboard') }}" class="nav-tab-bul">📊 Tableau de bord</a>
+    <span class="nav-tab-bul active">📋 Rapport</span>
+</div>
+
+<!-- Filtres -->
+<form method="get" action="{{ url_for('decanat_bulletins_rapport_preview') }}" class="no-print">
+    <div class="filtre-bar">
+        <div>
+            <label>Département</label>
+            <select name="dept">
+                <option value="">— Tous —</option>
+                {% for d in depts_dispo %}
+                    <option value="{{ d }}" {% if filtre_dept == d %}selected{% endif %}>{{ d }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Promotion</label>
+            <select name="promo">
+                <option value="">— Toutes —</option>
+                {% for p in promos_dispo %}
+                    <option value="{{ p }}" {% if filtre_promo == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Période des paiements</label>
+            <select name="date_mode" id="rapportDateMode" onchange="toggleReportDateFields()">
+                <option value="all" {% if filtre_date_mode == 'all' %}selected{% endif %}>Toutes les dates</option>
+                <option value="today" {% if filtre_date_mode == 'today' %}selected{% endif %}>Aujourd'hui</option>
+                <option value="exact" {% if filtre_date_mode == 'exact' %}selected{% endif %}>Une date précise</option>
+                <option value="range" {% if filtre_date_mode == 'range' %}selected{% endif %}>Du / au</option>
+            </select>
+        </div>
+        <div>
+            <label>Session</label>
+            <select name="session">
+                <option value="" {% if not filtre_session %}selected{% endif %}>Toutes les sessions</option>
+                <option value="speciale" {% if filtre_session == 'speciale' %}selected{% endif %}>Spéciale</option>
+                <option value="recours" {% if filtre_session == 'recours' %}selected{% endif %}>Recours</option>
+                <option value="initial" {% if filtre_session == 'initial' %}selected{% endif %}>1ère session uniquement</option>
+                <option value="session_2" {% if filtre_session == 'session_2' %}selected{% endif %}>2ème session uniquement</option>
+                <option value="recours_1" {% if filtre_session == 'recours_1' %}selected{% endif %}>Recours 1ère session uniquement</option>
+                <option value="recours_session_2" {% if filtre_session == 'recours_session_2' %}selected{% endif %}>Recours 2ème session uniquement</option>
+            </select>
+        </div>
+        <div id="rapportExactDate" {% if filtre_date_mode not in ('today', 'exact') %}hidden{% endif %}>
+            <label>Date précise</label>
+            <input type="date" name="date" value="{{ filtre_date }}">
+        </div>
+        <div id="rapportDateRange" class="date-range-fields" {% if filtre_date_mode != 'range' %}hidden{% endif %}>
+            <div>
+                <label>Du</label>
+                <input type="date" name="date_debut" value="{{ filtre_date_debut }}">
+            </div>
+            <div>
+                <label>Au</label>
+                <input type="date" name="date_fin" value="{{ filtre_date_fin }}">
+            </div>
+        </div>
+        <div>
+            <button type="submit" class="btn-sm btn-primary">🔍 Actualiser</button>
+        </div>
+        {% if filtre_dept or filtre_promo or filtre_date_mode != 'all' or filtre_date_debut or filtre_date_fin or filtre_session %}
+        <div>
+            <a href="{{ url_for('decanat_bulletins_rapport_preview') }}"
+               class="btn-sm btn-reset">✕ Réinitialiser</a>
+        </div>
+        {% endif %}
+    </div>
+</form>
+
+<!-- Synthèse chiffrée -->
+<div class="synth-grid">
+    <div class="synth-card blue">
+        <div class="sc-num">{{ meta.nb_payes }}</div>
+        <div class="sc-lbl">Étudiants payés</div>
+    </div>
+    <div class="synth-card green">
+        <div class="sc-num">{{ "{:,}".format(meta.total_montant) }}</div>
+        <div class="sc-lbl">Total recettes (FC)</div>
+    </div>
+    <div class="synth-card grey">
+        <div class="sc-num" style="font-size:{% if meta.date_cible == 'Toutes les dates' %}.85rem{% else %}1.1rem{% endif %};padding-top:.5rem;">{{ meta.date_cible }}</div>
+        <div class="sc-lbl">Date du rapport</div>
+    </div>
+    <div class="synth-card grey">
+        <div class="sc-num" style="font-size:.95rem;padding-top:.5rem;">{{ meta.genere_le }}</div>
+        <div class="sc-lbl">Généré le</div>
+    </div>
+</div>
+
+{% if not lignes %}
+<div class="empty-state">
+    <div class="es-icon">📭</div>
+    <p>Aucun paiement enregistré pour ces critères.</p>
+    <p style="font-size:.85rem;">Essayez de changer la date ou les filtres.</p>
+</div>
+{% else %}
+
+<!-- Tableaux séparés : bulletins ordinaires / bulletins de recours -->
+{% set ns = namespace(num=1) %}
+{% for section in sections %}
+{% if section.groupes %}
+    <div class="section-rapport {% if section.recours %}recours{% endif %}">
+        {{ '🎓' if section.recours else '📘' }}
+        {{ section.label }}
+        <span style="font-size:.82rem;font-weight:500;margin-left:.5rem;">
+            — {{ section.nb }} étudiant(s) · {{ "{:,}".format(section.total) }} FC
+        </span>
+    </div>
+{% for (dept, promo), groupe in section.groupes.items() %}
+    {% set sous_total = groupe | sum(attribute='montant') %}
+    <div class="groupe-titre">
+        <span>🏫 {{ dept }} — {{ promo }}</span>
+        <span class="groupe-sous">{{ groupe | length }} étudiant(s) · {{ "{:,}".format(sous_total) }} FC</span>
+    </div>
+    <table class="table-rapport">
+        <thead>
+            <tr>
+                <th style="width:40px;">N°</th>
+                <th>Nom complet</th>
+                <th>Matricule</th>
+                <th>Date paiement</th>
+                <th>Méthode</th>
+                <th>Référence</th>
+                <th style="text-align:right;">Montant (FC)</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for r in groupe %}
+            <tr>
+                <td style="text-align:center;color:#888;">{{ ns.num }}</td>
+                <td><strong>{{ r.nom }}</strong></td>
+                <td style="font-family:monospace;font-size:.82rem;">{{ r.matricule }}</td>
+                <td style="color:#555;font-size:.82rem;">{{ r.date_paiement }}</td>
+                <td><span class="badge-methode">{{ r.methode }}</span></td>
+                <td style="font-size:.78rem;color:#888;">{{ r.reference }}</td>
+                <td class="montant-cell" style="color:#198754;">{{ "{:,}".format(r.montant) }}</td>
+            </tr>
+            {% set ns.num = ns.num + 1 %}
+        {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="6">Sous-total — {{ groupe | length }} étudiant(s)</td>
+                <td style="text-align:right;">{{ "{:,}".format(sous_total) }} FC</td>
+            </tr>
+        </tfoot>
+    </table>
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+<!-- Total général -->
+<div class="total-general">
+    <span class="tg-nb">🎓 Total : <strong>{{ meta.nb_payes }}</strong> étudiant(s) ayant payé</span>
+    <span class="tg-amt">{{ "{:,}".format(meta.total_montant) }} FC</span>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDateFields(modeId, exactId, rangeId) {
+    const mode = document.getElementById(modeId).value;
+    document.getElementById(exactId).hidden = !['today', 'exact'].includes(mode);
+    document.getElementById(rangeId).hidden = mode !== 'range';
+}
+function toggleDashboardDateFields() {
+    toggleDateFields('dashboardDateMode', 'dashboardExactDate', 'dashboardDateRange');
+}
+function toggleReportDateFields() {
+    toggleDateFields('rapportDateMode', 'rapportExactDate', 'rapportDateRange');
+}
+document.addEventListener('DOMContentLoaded', () => {
+    if (document.getElementById('dashboardDateMode')) toggleDashboardDateFields();
+    if (document.getElementById('rapportDateMode')) toggleReportDateFields();
+});
+</script>
+{% endblock %}

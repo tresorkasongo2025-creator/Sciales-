@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% block title %}Formulaire de Recours — Second Semestre 2025-2026{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine: #0d2666; --bleu: #1a4db8; --or: #bfa01a; }
+.rc-wrap { max-width: 720px; margin: 2rem auto; }
+
+.rc-hero {
+    background: linear-gradient(135deg, var(--marine), var(--bleu));
+    color: white; padding: 2rem 2rem 1.5rem; border-radius: 16px 16px 0 0;
+    text-align: center;
+}
+.rc-hero h1 { margin: 0 0 .3rem; font-size: 1.3rem; font-weight: 800; }
+.rc-hero p  { margin: 0; opacity: .85; font-size: .88rem; }
+
+.rc-body { background: white; border-radius: 0 0 16px 16px;
+    box-shadow: 0 6px 30px rgba(0,0,0,.12); padding: 2rem; }
+
+.rc-section { margin-bottom: 2rem; }
+.rc-section-title {
+    font-size: 1rem; font-weight: 800; color: var(--marine);
+    border-bottom: 2px solid var(--or); padding-bottom: .4rem; margin-bottom: 1.2rem;
+    display: flex; align-items: center; gap: .5rem;
+}
+
+.rc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+.rc-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .9rem; }
+.rc-field { display: flex; flex-direction: column; gap: .25rem; }
+.rc-field label { font-size: .8rem; font-weight: 700; color: #333; }
+.rc-field input, .rc-field select {
+    padding: .6rem .9rem; border: 1.5px solid #d0d8e8; border-radius: 8px;
+    font-size: .9rem; transition: border-color .2s; background: white;
+}
+.rc-field input:focus, .rc-field select:focus {
+    outline: none; border-color: var(--bleu);
+    box-shadow: 0 0 0 3px rgba(26,77,184,.1);
+}
+.rc-field-full { grid-column: 1 / -1; }
+
+/* Claims */
+.claim-item {
+    display: flex; flex-direction: column; gap: .3rem;
+    padding: .7rem .9rem; border: 1.5px solid #e8ecf4; border-radius: 8px;
+    margin-bottom: .5rem; transition: border-color .2s, background .2s;
+}
+.claim-item:has(input[type=checkbox]:checked) {
+    border-color: var(--bleu); background: #f0f5ff;
+}
+.claim-top { display: flex; align-items: flex-start; gap: .6rem; }
+.claim-top input[type=checkbox] { margin-top: 3px; accent-color: var(--bleu); flex-shrink: 0; }
+.claim-top label { font-size: .88rem; color: #222; cursor: pointer; line-height: 1.4; }
+
+/* Zones masquées qui apparaissent quand cochée */
+.claim-extra { display: none; margin-left: 1.6rem; margin-top: .2rem; }
+.claim-item:has(input[type=checkbox]:checked) .claim-extra { display: flex; flex-direction: column; gap: .4rem; }
+
+.claim-extra input[type=text] {
+    width: 100%; padding: .4rem .7rem; border: 1.5px solid #c5d3f5;
+    border-radius: 6px; font-size: .83rem; box-sizing: border-box;
+}
+.claim-extra input[type=text]:invalid:not(:placeholder-shown) {
+    border-color: #dc3545;
+}
+
+/* Bouton joindre photo */
+.btn-join-photo {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: #f5f8ff; border: 1.5px dashed #7a9de8; border-radius: 7px;
+    padding: .4rem .8rem; font-size: .8rem; font-weight: 700; color: var(--bleu);
+    cursor: pointer; transition: background .15s; width: fit-content;
+}
+.btn-join-photo:hover { background: #e5edff; }
+.photo-chosen { font-size: .77rem; color: #198754; margin-top: .15rem; }
+
+.note-box {
+    background: #fff8e1; border-left: 4px solid var(--or);
+    border-radius: 0 8px 8px 0; padding: .9rem 1.1rem;
+    font-size: .83rem; color: #555; margin-top: 1.2rem;
+}
+.note-box strong { color: var(--marine); }
+
+.chrono-public {
+    background: linear-gradient(135deg, #f7f9ff, #eef4ff);
+    border: 1.5px solid #c5d3f5; border-radius: 12px;
+    padding: 1rem 1.1rem; margin-bottom: 1.5rem;
+}
+.chrono-public h3 { margin:0 0 .35rem; color:var(--marine); font-size:.98rem; }
+.chrono-public > p { margin:0 0 .8rem; color:#666; font-size:.82rem; }
+.chrono-public-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(185px,1fr)); gap:.55rem; }
+.chrono-public-item {
+    background:white; border:1px solid #dbe4f7; border-radius:8px;
+    padding:.65rem .75rem; color:#333;
+}
+.chrono-public-item.ferme { background:#fff5f5; border-color:#f1b5b5; }
+.chrono-public-promo { font-weight:800; color:var(--marine); font-size:.85rem; }
+.chrono-public-status { margin-top:.25rem; font-size:.78rem; color:#198754; font-weight:700; }
+.chrono-public-item.ferme .chrono-public-status { color:#b02a37; }
+.chrono-countdown { font-variant-numeric:tabular-nums; letter-spacing:.03em; }
+
+.btn-valider {
+    width: 100%; padding: 1rem; background: linear-gradient(135deg, var(--marine), var(--bleu));
+    color: white; border: none; border-radius: 10px; font-size: 1.05rem;
+    font-weight: 800; cursor: pointer; margin-top: 1.2rem; transition: opacity .2s;
+    display: flex; align-items: center; justify-content: center; gap: .5rem;
+}
+.btn-valider:hover { opacity: .88; }
+
+@media (max-width: 600px) {
+    .rc-grid, .rc-grid-3 { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rc-wrap">
+<div class="rc-hero">
+    <h1>📝 FORMULAIRE DE RECOURS</h1>
+    <p>SECOND SEMESTRE 2025-2026 — Faculté des Sciences Sociales — Université de Lubumbashi</p>
+</div>
+
+<div class="chrono-public">
+    <h3>⏱️ Période de recours</h3>
+    <p>Les promotions peuvent avoir une date limite fixée par le DÉCANAT. À la fin du chrono, les soumissions sont automatiquement fermées.</p>
+    <div class="chrono-public-grid">
+        {% for p in promotions %}
+        {% set chrono = recours_chronos.get(p, {}) %}
+        {% set promo_ouvert = recours_promo_ouvert.get(p, True) %}
+        <div class="chrono-public-item {{ '' if promo_ouvert else 'ferme' }}"
+             data-chrono-item="{{ p }}"
+             {% if chrono.has_timer and not chrono.expired %}
+             data-remaining="{{ chrono.remaining_seconds }}"
+             {% endif %}>
+            <div class="chrono-public-promo">🎓 {{ p }}</div>
+            {% if not promo_ouvert %}
+                <div class="chrono-public-status">Recours non disponible</div>
+            {% elif chrono.has_timer and not chrono.expired %}
+                <div class="chrono-public-status">
+                    🟢 Ouvert · reste <span class="chrono-countdown">calcul…</span>
+                </div>
+            {% else %}
+                <div class="chrono-public-status">🟢 Ouvert — sans chrono</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="rc-body">
+<form method="POST" action="{{ url_for('recours_valider') }}" id="recoursForm"
+      enctype="multipart/form-data">
+
+    <!-- 1. Identité -->
+    <div class="rc-section">
+        <div class="rc-section-title">1️⃣ &nbsp;Identité</div>
+        <div class="rc-grid">
+            <div class="rc-field">
+                <label for="nom">NOM *</label>
+                <input type="text" id="nom" name="nom" required placeholder="Ex : KABANGE"
+                       value="{{ request.form.get('nom', '') }}">
+            </div>
+            <div class="rc-field">
+                <label for="postnom">POSTNOM *</label>
+                <input type="text" id="postnom" name="postnom" required placeholder="Ex : NGOMAKA"
+                       value="{{ request.form.get('postnom', '') }}">
+            </div>
+            <div class="rc-field">
+                <label for="prenom">PRÉNOM <span style="font-weight:400;color:#888;">(optionnel)</span></label>
+                <input type="text" id="prenom" name="prenom" placeholder="Ex : Jean"
+                       value="{{ request.form.get('prenom', '') }}">
+            </div>
+            <div class="rc-field">
+                <label for="sexe">SEXE</label>
+                <select id="sexe" name="sexe">
+                    <option value="">— Sélectionner —</option>
+                    <option value="M" {% if request.form.get('sexe') == 'M' %}selected{% endif %}>Masculin</option>
+                    <option value="F" {% if request.form.get('sexe') == 'F' %}selected{% endif %}>Féminin</option>
+                </select>
+            </div>
+            <div class="rc-field">
+                <label for="telephone">TÉLÉPHONE</label>
+                <input type="tel" id="telephone" name="telephone" placeholder="Ex : +243 81 234 5678"
+                       value="{{ request.form.get('telephone', '') }}">
+            </div>
+        </div>
+        <div class="rc-grid" style="margin-top:.9rem;">
+            <div class="rc-field">
+                <label for="promotion">PROMOTION *</label>
+                <select id="promotion" name="promotion" required>
+                    <option value="">— Sélectionner —</option>
+                    {% for p in promotions %}
+                        <option value="{{ p }}"
+                                {% if not recours_promo_ouvert.get(p, True) %}disabled{% endif %}
+                                {% if request.form.get('promotion') == p %}selected{% endif %}>
+                            {{ p }}{% if not recours_promo_ouvert.get(p, True) %} — fermé{% endif %}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="rc-field">
+                <label for="filiere">FILIÈRE *</label>
+                <select id="filiere" name="filiere" required>
+                    <option value="">— Sélectionner —</option>
+                    {% for f in filieres %}
+                        <option value="{{ f }}" {% if request.form.get('filiere') == f %}selected{% endif %}>{{ f }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Réclamations -->
+    <div class="rc-section">
+        <div class="rc-section-title">2️⃣ &nbsp;Réclamation
+            <span style="font-size:.78rem;font-weight:400;color:#666;">(Choix multiple possible)</span>
+        </div>
+
+        {% for cid, label, detail_field in claims %}
+        {% set file_info = claim_files.get(cid) %}
+        <div class="claim-item">
+            <div class="claim-top">
+                <input type="checkbox" id="claim_{{ cid }}" name="claims" value="{{ cid }}"
+                       onchange="onClaimChange('{{ cid }}', '{{ detail_field or '' }}')"
+                       {% if cid in (request.form.getlist('claims') or []) %}checked{% endif %}>
+                <label for="claim_{{ cid }}">{{ label }}</label>
+            </div>
+
+            {% if detail_field or file_info %}
+            <div class="claim-extra" id="extra_{{ cid }}">
+
+                {% if detail_field %}
+                {# Champ texte obligatoire quand cochée #}
+                {% set placeholders = {
+                    'orthographe':   'Écrire le nom correctement…',
+                    'transcription': 'Décrire les cours concernés…',
+                    'manque_cote':   'Écrivez obligatoirement le ou les cours concernés…',
+                    'dispense':      'Décrire les cours de dispense…',
+                    'autre':         'Décrivez votre motif…'
+                } %}
+                {% if cid == 'manque_cote' %}
+                <textarea name="{{ detail_field }}" id="detail_{{ cid }}"
+                          placeholder="{{ placeholders.get(cid, 'Précisez…') }}"
+                          data-claim="{{ cid }}" rows="3"
+                          style="resize:vertical;">{{ request.form.get(detail_field, '') }}</textarea>
+                <small style="color:#6b7280;">
+                    Indiquez obligatoirement le nom de chaque cours concerné.
+                </small>
+                {% else %}
+                <input type="text" name="{{ detail_field }}" id="detail_{{ cid }}"
+                       placeholder="{{ placeholders.get(cid, 'Précisez…') }}"
+                       data-claim="{{ cid }}"
+                       value="{{ request.form.get(detail_field, '') }}">
+                {% endif %}
+                {% endif %}
+
+                {% if file_info %}
+                {# Bouton joindre photo (optionnel) #}
+                <label class="btn-join-photo">
+                    📎 Joindre : {{ file_info[1] }}
+                    <span style="font-weight:400;font-size:.75rem;color:#888;">(optionnel)</span>
+                    <input type="file" name="{{ file_info[0] }}" accept="image/*"
+                           style="display:none;" onchange="showPhotoName(this, '{{ cid }}')">
+                </label>
+                <span class="photo-chosen" id="photoname_{{ cid }}" style="display:none;"></span>
+                {% endif %}
+
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="note-box">
+        <strong>NB :</strong>
+        <ol style="margin:.5rem 0 0 1rem;padding:0;">
+            <li>Après avoir rempli le formulaire, cliquez sur <strong>Valider</strong>. Vous serez ensuite invité à scanner votre <strong>reçu de paiement de recours</strong>. Sans reçu valide, le formulaire ne peut pas être soumis.</li>
+            <li>Tous les formulaires soumis apparaîtront dans <strong>Gestion de Recours</strong> dans l'espace DÉCANAT, classés par promotion.</li>
+        </ol>
+    </div>
+
+    <button type="submit" class="btn-valider">
+        ✅ Valider et scanner le reçu de paiement
+    </button>
+</form>
+</div>
+</div>
+
+<script>
+function formatCountdown(totalSeconds) {
+    var seconds = Math.max(0, Number(totalSeconds) || 0);
+    var days = Math.floor(seconds / 86400);
+    seconds %= 86400;
+    var hours = Math.floor(seconds / 3600);
+    seconds %= 3600;
+    var minutes = Math.floor(seconds / 60);
+    var secs = Math.floor(seconds % 60);
+    var parts = [];
+    if (days) parts.push(days + 'j');
+    parts.push(String(hours).padStart(2, '0') + 'h');
+    parts.push(String(minutes).padStart(2, '0') + 'm');
+    parts.push(String(secs).padStart(2, '0') + 's');
+    return parts.join(' ');
+}
+
+document.querySelectorAll('[data-remaining]').forEach(function(card) {
+    var remaining = Number(card.dataset.remaining || 0);
+    var output = card.querySelector('.chrono-countdown');
+    function tick() {
+        if (output) output.textContent = formatCountdown(remaining);
+        if (remaining <= 0) {
+            window.location.reload();
+            return;
+        }
+        remaining -= 1;
+    }
+    tick();
+    window.setInterval(tick, 1000);
+});
+
+// Initialisation : appliquer le required sur les champs déjà cochés (retour après erreur)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('input[type=checkbox][name=claims]').forEach(function(cb) {
+        var cid = cb.value;
+        var detailField = cb.getAttribute('onchange');
+        // Extraire detail_field depuis l'attribut onchange
+        var m = cb.getAttribute('onchange').match(/'([^']*)'\s*\)/);
+        var df = m ? m[1] : '';
+        if (cb.checked && df) {
+            var inp = document.getElementById('detail_' + cid);
+            if (inp) inp.required = true;
+        }
+    });
+});
+
+function onClaimChange(cid, detailField) {
+    var cb  = document.getElementById('claim_' + cid);
+    var inp = detailField ? document.getElementById('detail_' + cid) : null;
+    if (inp) {
+        inp.required = cb.checked;
+        if (!cb.checked) inp.value = '';
+    }
+}
+
+function showPhotoName(input, cid) {
+    var span = document.getElementById('photoname_' + cid);
+    if (!span) return;
+    if (input.files && input.files[0]) {
+        span.textContent = '✅ ' + input.files[0].name;
+        span.style.display = 'block';
+    } else {
+        span.style.display = 'none';
+    }
+}
+
+// Validation finale : s'assurer qu'au moins une réclamation est cochée
+document.getElementById('recoursForm').addEventListener('submit', function(e) {
+    var checked = document.querySelectorAll('input[name=claims]:checked');
+    if (checked.length === 0) {
+        e.preventDefault();
+        alert('Veuillez cocher au moins une réclamation.');
+        return;
+    }
+    // Vérifier les champs texte obligatoires
+    var ok = true;
+    checked.forEach(function(cb) {
+        var inp = document.getElementById('detail_' + cb.value);
+        if (inp && inp.required && !inp.value.trim()) {
+            inp.style.borderColor = '#dc3545';
+            inp.focus();
+            ok = false;
+        }
+    });
+    if (!ok) {
+        e.preventDefault();
+        alert('Veuillez remplir tous les champs de précision obligatoires.');
+    }
+});
+</script>
+{% endblock %}

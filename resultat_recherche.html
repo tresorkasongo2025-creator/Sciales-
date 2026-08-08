@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Résultat de recherche - {{ etudiant.matricule }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-profile {
+        max-width: 900px;
+        margin: 2rem auto;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+    .profile-header h2 {
+        margin: 0;
+        font-size: 2rem;
+    }
+    .profile-header .matricule {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-top: 0.5rem;
+        background: rgba(255,255,255,0.2);
+        padding: 0.5rem 1rem;
+        border-radius: 25px;
+        display: inline-block;
+    }
+    .profile-body {
+        padding: 2rem;
+    }
+    .profile-photo {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .profile-photo img {
+        width: 200px;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 5px solid #6c5ce7;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    .info-item {
+        background: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 4px solid #6c5ce7;
+    }
+    .info-item label {
+        font-weight: bold;
+        color: #6c5ce7;
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+    }
+    .info-item .value {
+        font-size: 1.1rem;
+        color: #2c3e50;
+    }
+    .qr-code-section {
+        text-align: center;
+        margin-top: 2rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 10px;
+    }
+    .qr-code-section img {
+        max-width: 250px;
+        border: 3px solid #6c5ce7;
+        border-radius: 10px;
+        background: white;
+        padding: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .action-buttons {
+        text-align: center;
+        margin-top: 2rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    .date-inscription {
+        text-align: center;
+        color: #666;
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #e0e0e0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📋 Dossier Étudiant</h2>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Retour à l'accueil</a>
+</div>
+
+<div class="student-profile">
+    <div class="profile-header">
+        <h2>{{ etudiant.nom }} {{ etudiant.postnom }} {{ etudiant.prenom }}</h2>
+        <div class="matricule">{{ etudiant.matricule }}</div>
+    </div>
+
+    <div class="profile-body">
+        <div class="profile-photo">
+            {% if etudiant.photo %}
+            <img src="{{ url_for('fichier_persistant', category='uploads', filename=etudiant.photo) }}"
+                 alt="Photo de {{ etudiant.nom }}">
+            {% else %}
+            <div style="width: 200px; height: 200px; background: #e0e0e0; border-radius: 50%; 
+                        display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                <span style="font-size: 4rem;">👤</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <label>👤 Nom complet</label>
+                <div class="value">{{ etudiant.nom }} {{ etudiant.postnom }} {{ etudiant.prenom }}</div>
+            </div>
+
+            <div class="info-item">
+                <label>🆔 CODE-ID FAC</label>
+                <div class="value">{{ etudiant.matricule }}</div>
+            </div>
+
+            <div class="info-item">
+                <label>⚧ Sexe</label>
+                <div class="value">{{ etudiant.sexe }}</div>
+            </div>
+
+            <div class="info-item">
+                <label>📱 Téléphone</label>
+                <div class="value">{{ etudiant.telephone }}</div>
+            </div>
+
+            <div class="info-item">
+                <label>🏛️ Département</label>
+                <div class="value">{{ etudiant.departement }}</div>
+            </div>
+
+            <div class="info-item">
+                <label>🎓 Promotion</label>
+                <div class="value">{{ etudiant.promotion }}</div>
+            </div>
+        </div>
+
+        {% if etudiant.qrcode_path %}
+        <div class="qr-code-section">
+            <h3 style="margin-bottom: 1rem; color: #2c3e50;">📱 Votre QR Code Personnel</h3>
+            <img src="{{ url_for('fichier_persistant', category='qrcodes', filename=etudiant.qrcode_path) }}"
+                 alt="QR Code de {{ etudiant.matricule }}">
+            <p style="margin-top: 1rem; color: #666;">
+                Présentez ce QR code pour enregistrer votre présence
+            </p>
+        </div>
+        {% endif %}
+
+        <div class="action-buttons">
+            <a href="{{ url_for('telecharger_qrcode', matricule=etudiant.matricule) }}" 
+               class="btn btn-primary">
+                📥 Télécharger le QR Code
+            </a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                🏠 Retour à l'accueil
+            </a>
+        </div>
+
+        <div class="date-inscription">
+            <strong>📅 Date d'inscription:</strong> 
+            {{ etudiant.date_inscription.strftime('%d/%m/%Y à %H:%M') if etudiant.date_inscription else 'N/A' }}
+        </div>
+    </div>
+</div>
+{% endblock %}

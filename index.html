@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-compact">
+    <div class="hero-content">
+        <h1>Bienvenue<br>à E-SCIALES UNILU <img src="{{ url_for('static', filename='croix-bleue.png') }}" alt="+" class="plus-symbol"></h1>
+        <p class="slogan">La Faculté de pouvoir et des avantages</p>
+    </div>
+    {% if search_visible %}
+    <div class="search-inline">
+        <form method="POST" action="{{ url_for('recherche') }}" class="search-form-inline">
+            <input type="text" name="matricule" placeholder="Rechercher un CODE-ID FAC (ex: ETU6083)" 
+                   required maxlength="10" 
+                   style="text-transform: uppercase;"
+                   pattern="ETU[0-9]{4}|PROF[0-9]{4}"
+                   title="Format: ETU suivi de 4 chiffres">
+            <button type="submit" class="btn-search">
+                🔍
+            </button>
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+{% if scanner_visible %}
+<div class="scanner-button-container">
+    <a href="{{ url_for('scanner_public') }}" class="scanner-button">
+        <div class="scanner-icon">📱</div>
+        <h3>Scanner de présence</h3>
+        <p>Scannez votre QR code pour enregistrer votre présence aux cours.</p>
+        <span class="scanner-action">Scanner →</span>
+    </a>
+</div>
+{% endif %}
+
+{% if actualites %}
+<section class="home-news">
+    <h2>ACTUALITÉS FACULTAIRES</h2>
+    <div class="home-news-list">
+        {% for actualite in actualites %}
+        <article class="home-news-card">
+            <div class="home-news-title-row">
+                <h3>{{ actualite.titre }}</h3>
+                {% if actualite.epingle %}<span class="home-news-pin">📌 Épinglée</span>{% endif %}
+            </div>
+            <p class="home-news-date">
+                📅 Publié le {{ actualite.date_publication.strftime('%d/%m/%Y à %H:%M') }}
+            </p>
+            <p class="home-news-description">
+                {{ actualite.description }}
+            </p>
+            
+            {% if actualite.image %}
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <img src="{{ url_for('fichier_persistant', category='actualites', filename=actualite.image) }}"
+                     alt="{{ actualite.titre }}" 
+                     class="home-news-image">
+            </div>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if info_visible %}
+<div class="info-section">
+    <h2>À propos du système</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <h4>🎯 Inscription simplifiée</h4>
+            <p>Remplissez le formulaire en ligne et recevez immédiatement votre CODE-ID FAC et QR code personnalisé.</p>
+        </div>
+        <div class="info-item">
+            <h4>📱 Contrôle de présence</h4>
+            <p>Système automatisé de prise de présence via scan de QR code pour étudiants et professeurs.</p>
+        </div>
+        <div class="info-item">
+            <h4>📈 Gestion centralisée</h4>
+            <p>L'administration peut consulter et exporter toutes les listes et présences en PDF, Excel ou Word.</p>
+        </div>
+        <div class="info-item">
+            <h4>🔒 Sécurité garantie</h4>
+            <p>Accès sécurisé avec authentification pour protéger les données des étudiants.</p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if total_visites is not none %}
+<div style="text-align:center;color:#888;font-size:.8rem;margin:1.5rem 0 .5rem;">
+    👁️ {{ total_visites }} visite{{ 's' if total_visites != 1 else '' }} sur le site
+</div>
+{% endif %}
+{% endblock %}

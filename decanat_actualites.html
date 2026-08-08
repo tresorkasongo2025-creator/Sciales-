@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des actualités et communiqués - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📰 Gestion des actualités et communiqués</h2>
+    <div class="header-actions">
+        <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="form-container">
+    <h3>{% if publication_a_modifier %}✏️ Modifier la publication{% else %}➕ Publier une nouvelle publication{% endif %}</h3>
+    <form method="POST" enctype="multipart/form-data" class="inscription-form">
+        {% if publication_a_modifier %}
+        <input type="hidden" name="actualite_id" value="{{ publication_a_modifier.id }}">
+        {% endif %}
+
+        <div class="form-group">
+            <label for="type_publication">Type de publication *</label>
+            <select id="type_publication" name="type_publication" required>
+                <option value="actualite" {% if not publication_a_modifier or publication_a_modifier.type_publication == 'actualite' %}selected{% endif %}>
+                    Actualité — affichée sur l’accueil
+                </option>
+                <option value="communique" {% if publication_a_modifier and publication_a_modifier.type_publication == 'communique' %}selected{% endif %}>
+                    Communiqué — affiché dans Communiqués
+                </option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="titre">Titre *</label>
+            <input type="text" id="titre" name="titre" required
+                   placeholder="Ex: Rentrée académique 2025-2026"
+                   value="{{ publication_a_modifier.titre if publication_a_modifier else '' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description *</label>
+            <textarea id="description" name="description" required rows="6"
+                      placeholder="Décrivez l'actualité ou le communiqué officiel..."
+                      style="width:100%;padding:1rem;border:2px solid #ddd;border-radius:8px;font-size:.95rem;">{{ publication_a_modifier.description if publication_a_modifier else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Image (optionnel)</label>
+            <input type="file" id="image" name="image" accept=".png,.jpg,.jpeg">
+            <small style="color:#666;">
+                Formats acceptés : PNG, JPG, JPEG.
+                {% if publication_a_modifier and publication_a_modifier.image %}
+                Laissez vide pour conserver l’image actuelle.
+                {% endif %}
+            </small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                {% if publication_a_modifier %}💾 Enregistrer les modifications{% else %}✅ Publier{% endif %}
+            </button>
+            {% if publication_a_modifier %}
+            <a href="{{ url_for('decanat_actualites') }}" class="btn btn-secondary">Annuler</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<div class="table-container" style="margin-top:2rem;">
+    <h3 style="margin-bottom:1rem;padding:0 1rem;">Publications enregistrées</h3>
+    <div style="padding:0 1rem;">
+        {% if actualites %}
+            {% for actualite in actualites %}
+            <div style="border:2px solid #e0e0e0;border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;background:#f9f9f9;">
+                <div class="publication-admin-row">
+                    <div style="flex:1;min-width:0;">
+                        <h3 style="margin-top:0;color:#6c5ce7;">
+                            {% if actualite.epingle %}📌 {% endif %}{{ actualite.titre }}
+                        </h3>
+                        <p style="color:#666;font-size:.9rem;margin:.5rem 0;">
+                            {% if actualite.type_publication == 'communique' %}📣 Communiqué{% else %}📰 Actualité{% endif %}
+                            · 📅 {{ actualite.date_publication.strftime('%d/%m/%Y à %H:%M') }}
+                            · {% if actualite.publie %}<span style="color:#198754;">Visible</span>{% else %}<span style="color:#dc3545;">Masquée</span>{% endif %}
+                        </p>
+                        <p style="margin:1rem 0;line-height:1.6;white-space:pre-wrap;">{{ actualite.description }}</p>
+
+                        {% if actualite.image %}
+                        <div style="margin-top:1rem;">
+                            <img src="{{ url_for('fichier_persistant', category='actualites', filename=actualite.image) }}"
+                                 alt="{{ actualite.titre }}"
+                                 style="max-width:400px;max-height:300px;border-radius:8px;border:2px solid #ddd;">
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="publication-admin-actions">
+                        <a href="{{ url_for('decanat_actualites', modifier=actualite.id) }}"
+                           class="btn btn-secondary">✏️ Modifier</a>
+                        <form method="POST" action="{{ url_for('epingler_actualite', actualite_id=actualite.id) }}">
+                            <button type="submit" class="btn {% if actualite.epingle %}btn-warning{% else %}btn-primary{% endif %}">
+                                {% if actualite.epingle %}📌 Désépingler{% else %}📌 Épingler{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('basculer_visibilite_actualite', actualite_id=actualite.id) }}">
+                            <button type="submit" class="btn btn-secondary">
+                                {% if actualite.publie %}🙈 Masquer{% else %}👁️ Afficher{% endif %}
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('supprimer_actualite', actualite_id=actualite.id) }}"
+                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette publication ?');">
+                            <button type="submit" class="btn btn-danger">🗑️ Supprimer</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="empty-state">Aucune publication enregistrée.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="table-footer">
+    <p><strong>Total :</strong> {{ actualites|length }} publication(s)</p>
+</div>
+{% endblock %}

@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Recours — DÉCANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine: #0d2666; --bleu: #1a4db8; --or: #bfa01a; }
+.panel { background: white; border-radius: 12px; padding: 1.4rem 1.6rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.2rem; }
+.panel h3 { margin: 0 0 .9rem; color: var(--marine); font-size: 1rem;
+    border-bottom: 2px solid #e8ecf0; padding-bottom: .5rem; }
+
+.hero {
+    background: linear-gradient(135deg, var(--marine), var(--bleu));
+    color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.2rem;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+}
+.hero h2 { margin: 0 0 .2rem; font-size: 1.3rem; }
+.hero p  { margin: 0; opacity: .85; font-size: .88rem; }
+
+.filtre-bar { display: flex; gap: .8rem; flex-wrap: wrap; align-items: flex-end;
+    background: #f0f4ff; border-radius: 10px; padding: .8rem 1rem; margin-bottom: 1.2rem; }
+.filtre-bar label { font-size: .78rem; font-weight: 600; color: #333; display: block; margin-bottom: .2rem; }
+.filtre-bar select { padding: .35rem .65rem; border: 1px solid #c8d0e0; border-radius: 6px;
+    font-size: .87rem; background: white; min-width: 180px; }
+.btn-sm { padding: .38rem 1rem; border: none; border-radius: 6px; cursor: pointer;
+    font-size: .85rem; font-weight: 600; }
+.btn-primary { background: var(--marine); color: white; }
+.btn-primary:hover { background: var(--bleu); }
+.btn-reset { background: #e8ecf0; color: #444; text-decoration: none; display: inline-block; }
+.btn-pdf { background: #c0392b; color: white; text-decoration: none; padding: .5rem 1.2rem;
+    border-radius: 8px; font-weight: 700; font-size: .88rem;
+    display: inline-flex; align-items: center; gap: .4rem; }
+.btn-pdf:hover { background: #a93226; }
+
+/* Stats */
+.stats-row { display: grid; grid-template-columns: repeat(2, minmax(160px, 1fr));
+    gap: .65rem; margin-bottom: .9rem; }
+.stat-card { background: white; border-radius: 8px; padding: .65rem .9rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05); text-align: center; }
+.stat-card .num { font-size: 1.45rem; line-height: 1.15; font-weight: 800; color: var(--marine); }
+.stat-card .lbl { font-size: .72rem; color: #666; margin-top: .15rem; }
+.stat-card.money { border: 2px solid #d8b52b; background: #fffdf0; }
+.stat-card.money .num { color: #8a6500; }
+.financial-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:1rem; margin-bottom:1.2rem; }
+.financial-summary .panel { margin-bottom:0; }
+.financial-table { width:100%; border-collapse:collapse; font-size:.82rem; }
+.financial-table th { background:#0d2666; color:white; padding:.45rem .6rem; text-align:left; }
+.financial-table td { padding:.45rem .6rem; border-bottom:1px solid #e5e9f2; }
+.financial-table tr:nth-child(even) td { background:#f7f9ff; }
+.financial-table .amount { color:#8a6500; font-weight:800; text-align:right; white-space:nowrap; }
+.financial-total { margin-top:.7rem; padding-top:.6rem; border-top:2px solid #d8b52b;
+    color:#7a5000; font-weight:800; text-align:right; }
+
+/* Promo section */
+.promo-hdr {
+    background: var(--marine); color: white; padding: .5rem 1rem;
+    font-weight: 700; font-size: .9rem; border-radius: 6px 6px 0 0;
+    display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+}
+.promo-hdr.fermee { background: #6c757d; }
+.badge-ferme { background: #dc3545; color: white; font-size: .7rem; padding: .15rem .5rem;
+    border-radius: 10px; font-weight: 700; margin-left: .4rem; }
+.badge-ouvert { background: #198754; color: white; font-size: .7rem; padding: .15rem .5rem;
+    border-radius: 10px; font-weight: 700; margin-left: .4rem; }
+
+.btn-toggle { padding: .25rem .7rem; border: none; border-radius: 6px; cursor: pointer;
+    font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.btn-toggle.actif   { background: #dc3545; color: white; }
+.btn-toggle.inactif { background: #198754; color: white; }
+
+/* Activation panel */
+.activation-panel {
+    background: #f8f9ff; border: 1.5px solid #c8d0e0; border-radius: 10px;
+    padding: 1rem 1.2rem; margin-bottom: 1.2rem;
+}
+.activation-panel h4 { margin: 0 0 .8rem; color: var(--marine); font-size: .9rem; }
+.promo-toggles { display: flex; flex-wrap: wrap; gap: .6rem; }
+.promo-toggle-item {
+    display: flex; align-items: center; gap: .5rem;
+    background: white; border: 1.5px solid #c8d0e0; border-radius: 8px;
+    padding: .4rem .8rem; font-size: .82rem; font-weight: 600;
+}
+.promo-toggle-item.fermee { background: #fff0f0; border-color: #f5aaaa; }
+
+/* Grille toggle promo × filière */
+.toggle-grid { border-collapse: collapse; font-size: .78rem; width: 100%; }
+.toggle-grid th {
+    background: var(--marine); color: white; padding: .35rem .5rem;
+    font-size: .72rem; font-weight: 700; text-align: center; white-space: nowrap;
+}
+.toggle-grid td { border: 1px solid #dde2ec; }
+.toggle-grid tr:nth-child(even) > td:first-child { background: #f5f8ff; }
+.toggle-cell {
+    border: none; border-radius: 6px; cursor: pointer;
+    font-size: 1rem; padding: .15rem .4rem; width: 2.2rem; height: 2rem;
+    line-height: 1; display: inline-flex; align-items: center; justify-content: center;
+}
+.toggle-cell.ouvert { background: #d1f5e0; }
+.toggle-cell.ouvert:hover { background: #ffd5d5; }
+.toggle-cell.ferme  { background: #ffd5d5; }
+.toggle-cell.ferme:hover  { background: #d1f5e0; }
+
+.table-recours { width: 100%; border-collapse: collapse; margin-bottom: 1.4rem;
+    border: 1px solid #c8d0e0; }
+.table-recours th { background: #2a4a8a; color: white; padding: .45rem .75rem;
+    font-size: .8rem; text-align: left; }
+.table-recours td { padding: .45rem .75rem; border-bottom: 1px solid #eee; font-size: .82rem;
+    vertical-align: top; }
+.table-recours tr:nth-child(even) td { background: #f5f8ff; }
+.table-recours tr:hover td { background: #e8f0ff; }
+
+.claims-mini { font-size: .77rem; color: #444; line-height: 1.5; }
+.claims-mini li { padding: .05rem 0; }
+
+.badge-soumis { background: #e8f0ff; color: #1a4db8; border-radius: 10px;
+    padding: .1rem .5rem; font-size: .72rem; font-weight: 700; }
+
+.btn-del { padding: .2rem .55rem; background: #dc3545; color: white; border: none;
+    border-radius: 5px; font-size: .72rem; cursor: pointer; font-weight: 700; }
+.btn-del:hover { background: #b02a37; }
+
+/* Orphan receipts */
+.orphan-box { background: #fff8e1; border: 2px solid var(--or); border-radius: 10px;
+    padding: 1.2rem 1.5rem; }
+.orphan-box h4 { margin: 0 0 .8rem; color: #7a5000; font-size: .95rem; }
+.orphan-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.orphan-table th { background: #7a5000; color: white; padding: .4rem .7rem; text-align: left; }
+.orphan-table td { padding: .4rem .7rem; border-bottom: 1px solid #f5e0a0; }
+.orphan-table tr:last-child td { border-bottom: none; }
+.form-lier { display: flex; gap: .4rem; align-items: center; }
+.form-lier input { padding: .3rem .6rem; border: 1.5px solid #c8a000; border-radius: 6px;
+    font-size: .8rem; width: 160px; }
+.btn-lier { padding: .3rem .8rem; background: #0a6640; color: white; border: none;
+    border-radius: 6px; font-size: .8rem; cursor: pointer; font-weight: 700; }
+.btn-lier:hover { background: #198754; }
+
+.empty-state { text-align: center; padding: 2.5rem; color: #aaa; }
+.empty-state .es-icon { font-size: 3rem; }
+.chrono-panel { background:#fffdf0; border:1.5px solid #ead27a; border-radius:10px;
+    padding:1rem 1.2rem; margin-bottom:1.2rem; }
+.chrono-panel h4 { margin:0 0 .35rem; color:#7a5000; font-size:.95rem; }
+.chrono-panel p { margin:0 0 .8rem; color:#6b5a2a; font-size:.8rem; }
+.chrono-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.7rem; }
+.chrono-item { background:white; border:1px solid #eadfb0; border-radius:8px; padding:.7rem; }
+.chrono-item strong { display:block; color:var(--marine); font-size:.85rem; margin-bottom:.45rem; }
+.chrono-form { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+.chrono-form select { padding:.35rem .45rem; border:1px solid #c8d0e0; border-radius:5px; font-size:.78rem; }
+.chrono-form button { padding:.35rem .6rem; border:0; border-radius:5px; cursor:pointer; font-size:.76rem; font-weight:700; }
+.chrono-start { background:#198754; color:white; }
+.chrono-stop { background:#dc3545; color:white; }
+.chrono-state { font-size:.76rem; color:#6b5a2a; margin-bottom:.45rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+    <div>
+        <h2>📂 Gestion des Recours</h2>
+        <p>Second Semestre 2025-2026 — Faculté des Sciences Sociales</p>
+    </div>
+    <div style="display:flex;gap:.7rem;flex-wrap:wrap;">
+        <a href="{{ url_for('decanat_recours_pdf', promo=filtre_promo, filiere=filtre_filiere) }}" class="btn-pdf">
+            📄 PDF {% if filtre_promo or filtre_filiere %}(filtre actif){% else %}Tous{% endif %}
+        </a>
+        <form method="POST" action="{{ url_for('decanat_recours_supprimer_tous') }}"
+              style="display:inline-flex;align-items:center;gap:.35rem;"
+              onsubmit="return confirm('⚠️ Attention : cette opération supprimera toutes les demandes de recours enregistrées.\\n\\nCette action est irréversible. Voulez-vous continuer ?');">
+            <label style="display:inline-flex;align-items:center;gap:.35rem;color:#7b1e1e;font-size:.75rem;font-weight:600;">
+                <input type="checkbox" name="confirmation" value="SUPPRIMER" required>
+                Je confirme la suppression irréversible
+            </label>
+            <button type="submit" class="btn-pdf" style="background:#dc3545;border:none;cursor:pointer;">
+                🗑️ Supprimer tous les recours
+            </button>
+        </form>
+        <a href="{{ url_for('decanat_dashboard') }}"
+           style="background:#e8ecf0;color:#444;padding:.5rem 1rem;border-radius:8px;
+                  text-decoration:none;font-size:.88rem;font-weight:600;">← Tableau de bord</a>
+    </div>
+</div>
+
+<!-- Chrono de fermeture automatique par promotion -->
+<div class="chrono-panel">
+    <h4>⏱️ Chrono de fermeture automatique par promotion</h4>
+    <p>
+        Choisissez une durée puis démarrez le chrono. À son expiration, toutes les filières
+        de la promotion seront automatiquement fermées sur le formulaire public.
+    </p>
+    <div class="chrono-grid">
+        {% for p in promotions %}
+        {% set chrono = recours_chronos.get(p, {}) %}
+        <div class="chrono-item">
+            <strong>🎓 {{ p }}</strong>
+            {% if chrono.has_timer and not chrono.expired %}
+                <div class="chrono-state">
+                    🟢 En cours — {{ chrono.hours }} h restantes au maximum
+                </div>
+            {% elif chrono.has_timer and chrono.expired %}
+                <div class="chrono-state" style="color:#b02a37;">
+                    🔒 Expiré — promotion fermée automatiquement
+                </div>
+            {% else %}
+                <div class="chrono-state">⏸️ Aucun chrono actif</div>
+            {% endif %}
+            <form method="POST" action="{{ url_for('decanat_recours_chrono') }}" class="chrono-form">
+                <input type="hidden" name="promo" value="{{ p }}">
+                <select name="hours" aria-label="Durée du chrono pour {{ p }}">
+                    {% for hours in chrono_durees %}
+                    <option value="{{ hours }}" {% if chrono.hours == hours %}selected{% endif %}>
+                        {{ hours }} heure{{ 's' if hours != 1 else '' }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" name="action" value="start" class="chrono-start">
+                    ▶ Démarrer / relancer
+                </button>
+                {% if chrono.has_timer %}
+                <button type="submit" name="action" value="stop" class="chrono-stop">
+                    ✕ Arrêter
+                </button>
+                {% endif %}
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Panneau d'activation/désactivation par promotion × filière -->
+<div class="activation-panel">
+    <h4>🔒 Ouverture des recours par promotion &amp; filière</h4>
+    <p style="font-size:.8rem;color:#555;margin:0 0 .8rem;">
+        Cliquez sur une case pour ouvrir ou fermer les soumissions pour cette combinaison.
+        <span style="display:inline-block;background:#198754;color:white;
+                     font-size:.68rem;padding:.1rem .4rem;border-radius:4px;margin-left:.3rem;">Vert = ouvert</span>
+        <span style="display:inline-block;background:#dc3545;color:white;
+                     font-size:.68rem;padding:.1rem .4rem;border-radius:4px;margin-left:.2rem;">Rouge = fermé</span>
+    </p>
+    <div style="overflow-x:auto;">
+        <table class="toggle-grid">
+            <thead>
+                <tr>
+                    <th style="text-align:left;min-width:100px;">Promotion</th>
+                    {% for f in filieres %}
+                    <th>{{ f }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in promotions %}
+                <tr>
+                    <td style="font-weight:700;font-size:.82rem;color:#0d2666;white-space:nowrap;">{{ p }}</td>
+                    {% for f in filieres %}
+                    {% set actif = recours_actif.get(p, {}).get(f, True) %}
+                    <td style="text-align:center;padding:.3rem .4rem;">
+                        <form method="POST" action="{{ url_for('decanat_recours_toggle_promo') }}" style="margin:0;">
+                            <input type="hidden" name="promo"   value="{{ p }}">
+                            <input type="hidden" name="filiere" value="{{ f }}">
+                            <button type="submit"
+                                    class="toggle-cell {{ 'ouvert' if actif else 'ferme' }}"
+                                    title="{{ 'Fermer' if actif else 'Ouvrir' }} — {{ p }} / {{ f }}"
+                                    onclick="return confirm('{{ 'Fermer' if actif else 'Ouvrir' }} les recours pour {{ p }} — {{ f }} ?')">
+                                {{ '✅' if actif else '🔒' }}
+                            </button>
+                        </form>
+                    </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Filtres -->
+<form method="get" action="{{ url_for('decanat_recours') }}">
+    <div class="filtre-bar">
+        <div>
+            <label>Promotion</label>
+            <select name="promo">
+                <option value="">— Toutes les promotions —</option>
+                {% for p in promotions %}
+                    <option value="{{ p }}" {% if filtre_promo == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label>Filière</label>
+            <select name="filiere">
+                <option value="">— Toutes les filières —</option>
+                {% for f in filieres %}
+                    <option value="{{ f }}" {% if filtre_filiere == f %}selected{% endif %}>{{ f }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:flex;gap:.5rem;align-items:flex-end;">
+            <button type="submit" class="btn-sm btn-primary">🔍 Filtrer</button>
+            {% if filtre_promo or filtre_filiere %}
+            <a href="{{ url_for('decanat_recours') }}" class="btn-sm btn-reset">✕ Réinitialiser</a>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+<!-- Stats globales et recettes : les détails sont présentés dans les tableaux ci-dessous -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="num">{{ total_recours }}</div>
+        <div class="lbl">Recours soumis</div>
+    </div>
+    <div class="stat-card money">
+        <div class="num">{{ total_montant_usd }} USD</div>
+        <div class="lbl">Total des frais de recours soumis</div>
+    </div>
+</div>
+
+<!-- Récapitulatif financier par département et par promotion -->
+<div class="financial-summary">
+    <div class="panel">
+        <h3>💰 Montant par département</h3>
+        {% if par_departement %}
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Département</th>
+                    <th>Recours</th>
+                    <th style="text-align:right;">Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ligne in par_departement %}
+                <tr>
+                    <td>
+                        <strong>{{ ligne.departement }}</strong>
+                        <br><small style="color:#777;">{{ ligne.filieres }}</small>
+                    </td>
+                    <td>{{ ligne.recours }}</td>
+                    <td class="amount">{{ ligne.montant_usd }} USD</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="financial-total">Total : {{ total_montant_usd }} USD</div>
+        {% else %}
+        <div class="empty-state" style="padding:1.2rem;">Aucun montant à afficher.</div>
+        {% endif %}
+    </div>
+
+    <div class="panel">
+        <h3>💰 Montant par promotion</h3>
+        {% if par_promotion %}
+        <table class="financial-table">
+            <thead>
+                <tr>
+                    <th>Promotion</th>
+                    <th>Recours</th>
+                    <th style="text-align:right;">Montant</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for ligne in par_promotion %}
+                <tr>
+                    <td><strong>{{ ligne.promotion }}</strong></td>
+                    <td>{{ ligne.recours }}</td>
+                    <td class="amount">{{ ligne.montant_usd }} USD</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div class="financial-total">Total : {{ total_montant_usd }} USD</div>
+        {% else %}
+        <div class="empty-state" style="padding:1.2rem;">Aucun montant à afficher.</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Liste par promotion -->
+{% if not by_promo %}
+<div class="panel">
+    <div class="empty-state">
+        <div class="es-icon">📭</div>
+        <p>Aucun recours soumis pour le moment.</p>
+    </div>
+</div>
+{% else %}
+
+{% for promo in promotions %}
+{% if promo in by_promo %}
+{% set items = by_promo[promo] %}
+{% set actif = recours_promo_ouvert.get(promo, True) %}
+<div class="promo-hdr {{ '' if actif else 'fermee' }}">
+    <span>
+        🎓 {{ promo }}
+        {% if not actif %}<span class="badge-ferme">🔒 Fermé</span>{% endif %}
+    </span>
+    <span style="font-size:.82rem;font-weight:400;opacity:.9;">
+        {{ items | length }} recours &nbsp;·&nbsp;
+        <a href="{{ url_for('decanat_recours_pdf', promo=promo, filiere=filtre_filiere) }}"
+           style="color:white;font-weight:700;">📄 PDF{% if filtre_filiere %} ({{ filtre_filiere }}){% endif %}</a>
+    </span>
+</div>
+<table class="table-recours">
+    <thead>
+        <tr>
+            <th style="width:35px;">N°</th>
+            <th>Nom complet</th>
+            <th>Filière</th>
+            <th>Réclamations</th>
+            <th>Reçu N°</th>
+            <th>Date soumission</th>
+            <th>Statut</th>
+            <th style="width:50px;">⚙</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for r in items %}
+        {% set claims = r.reclamations_json | fromjson if r.reclamations_json else [] %}
+        <tr>
+            <td style="text-align:center;color:#888;">{{ loop.index }}</td>
+            <td>
+                <strong>{{ r.nom }} {{ r.postnom }}{% if r.prenom %} {{ r.prenom }}{% endif %}</strong><br>
+                <span style="font-size:.75rem;color:#888;">
+                    {{ r.sexe or '' }}{% if r.telephone %} · {{ r.telephone }}{% endif %}
+                </span>
+            </td>
+            <td style="font-size:.8rem;">{{ r.filiere }}</td>
+            <td>
+                <ul class="claims-mini" style="margin:0;padding-left:1rem;">
+                    {% for c in claims %}
+                    <li>{{ c.texte }}{% if c.detail %} : <em>{{ c.detail }}</em>{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            </td>
+            <td style="font-family:monospace;font-size:.78rem;">{{ r.recu_numero or '—' }}</td>
+            <td style="font-size:.77rem;color:#555;">{{ r.date_soumission.strftime('%d/%m/%Y %H:%M') if r.date_soumission else '—' }}</td>
+            <td><span class="badge-soumis">{{ r.statut }}</span></td>
+            <td>
+                <form method="POST"
+                      action="{{ url_for('decanat_recours_supprimer', rid=r.id) }}"
+                      onsubmit="return confirm('Supprimer le recours de {{ r.nom }} {{ r.postnom }} ? Le reçu sera libéré.')">
+                    <button type="submit" class="btn-del">🗑</button>
+                </form>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+{% endfor %}
+
+{% set extra_promos = by_promo.keys() | list | reject('in', promotions) | list %}
+{% for promo in extra_promos %}
+{% set items = by_promo[promo] %}
+<div class="promo-hdr">
+    <span>🎓 {{ promo }}</span>
+    <span style="font-size:.82rem;font-weight:400;">{{ items | length }} recours</span>
+</div>
+<table class="table-recours">
+    <thead>
+        <tr>
+            <th>N°</th><th>Nom complet</th><th>Filière</th>
+            <th>Réclamations</th><th>Reçu N°</th><th>Date</th><th>Statut</th><th>⚙</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for r in items %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong>{{ r.nom }} {{ r.postnom }}{% if r.prenom %} {{ r.prenom }}{% endif %}</strong></td>
+        <td>{{ r.filiere }}</td>
+        <td>
+            {% set claims = r.reclamations_json | fromjson if r.reclamations_json else [] %}
+            <ul class="claims-mini" style="margin:0;padding-left:1rem;">
+                {% for c in claims %}<li>{{ c.texte }}</li>{% endfor %}
+            </ul>
+        </td>
+        <td>{{ r.recu_numero or '—' }}</td>
+        <td style="font-size:.77rem;">{{ r.date_soumission.strftime('%d/%m/%Y %H:%M') if r.date_soumission else '—' }}</td>
+        <td><span class="badge-soumis">{{ r.statut }}</span></td>
+        <td>
+            <form method="POST"
+                  action="{{ url_for('decanat_recours_supprimer', rid=r.id) }}"
+                  onsubmit="return confirm('Supprimer ce recours ?')">
+                <button type="submit" class="btn-del">🗑</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endfor %}
+
+{% endif %}
+
+<!-- Paiements non comptabilisés -->
+{% if orphan_recus %}
+<div class="panel">
+    <h3>⚠️ Reçus utilisés sans paiement comptabilisé ({{ orphan_recus | length }})</h3>
+    <div class="orphan-box">
+        <h4>Ces reçus ont été scannés mais le paiement du bulletin n'a pas été enregistré. Liez chaque reçu au bon étudiant en entrant son matricule.</h4>
+        <table class="orphan-table">
+            <thead>
+                <tr>
+                    <th>Reçu N°</th>
+                    <th>Lot / Dépt</th>
+                    <th>Nom enregistré lors du scan</th>
+                    <th>Date utilisation</th>
+                    <th>Lier au bulletin (matricule)</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for r in orphan_recus %}
+                <tr>
+                    <td style="font-family:monospace;font-weight:700;">{{ r.numero }}</td>
+                    <td>{{ r.lot }} / {{ r.dept }}</td>
+                    <td>{{ r.nom_etudiant or '—' }}</td>
+                    <td style="font-size:.78rem;">{{ r.date_utilisation.strftime('%d/%m/%Y %H:%M') if r.date_utilisation else '—' }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('decanat_recours_lier_bulletin') }}"
+                              class="form-lier">
+                            <input type="hidden" name="recu_id" value="{{ r.id }}">
+                            <input type="text" name="matricule" placeholder="Ex : SSM-2021-2022060" required>
+                            <button type="submit" class="btn-lier">✔ Lier</button>
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Connexion DECANAT{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-box">
+        <div class="login-icon">🔒</div>
+        <h2>Espace DECANAT</h2>
+        <p>Accès réservé à l'administration</p>
+
+        <form method="POST" class="login-form">
+            <div class="form-group">
+                <label for="operator_name">Votre nom / identifiant</label>
+                <input type="text" id="operator_name" name="operator_name"
+                       placeholder="ex : Marie K." required autofocus
+                       maxlength="100">
+            </div>
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <input type="password" id="password" name="password" 
+                       placeholder="Entrez le mot de passe" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-large">
+                🔓 Se connecter
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <a href="{{ url_for('index') }}">← Retour à l'accueil</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

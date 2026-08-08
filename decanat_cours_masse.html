@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Ajout en masse de cours - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📚 Ajout en masse de cours</h2>
+    <div class="header-actions">
+        <a href="{{ url_for('decanat_cours') }}" class="btn btn-secondary">← Retour aux cours</a>
+    </div>
+</div>
+
+<div class="form-container">
+    <h3>➕ Ajouter plusieurs cours en une seule fois</h3>
+    <p style="color: #666; margin-bottom: 1.5rem;">
+        Entrez la liste des cours (un cours par ligne). Vous pouvez copier-coller directement votre liste.
+        Les numéros au début seront automatiquement retirés.
+    </p>
+    
+    <form method="POST" class="inscription-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="departement">Département *</label>
+                <select id="departement" name="departement" required>
+                    <option value="">Sélectionner...</option>
+                    {% for dept in departements %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="promotion">Promotion *</label>
+                <select id="promotion" name="promotion" required>
+                    <option value="">Sélectionner...</option>
+                    {% for promo in promotions %}
+                    <option value="{{ promo }}">{{ promo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem;">
+            <label for="cours_liste">Liste des cours (un cours par ligne) *</label>
+            <textarea 
+                id="cours_liste" 
+                name="cours_liste" 
+                required 
+                rows="15"
+                placeholder="Exemple:
+1. Introduction aux Relations Internationales
+2. Introduction aux relations internationales culturelles
+3. Introduction à la politique étrangère
+4. Introduction à la diplomatie classique
+...
+
+ou simplement:
+Introduction aux Relations Internationales
+Introduction aux relations internationales culturelles
+Introduction à la politique étrangère
+..."
+                style="width: 100%; padding: 1rem; font-family: monospace; border: 2px solid #ddd; border-radius: 8px; font-size: 0.95rem;"
+            ></textarea>
+            <small style="color: #666; display: block; margin-top: 0.5rem;">
+                💡 Astuce: Les codes de cours seront générés automatiquement (COURS001, COURS002, etc.)
+            </small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                ✅ Ajouter tous les cours
+            </button>
+            <a href="{{ url_for('decanat_cours') }}" class="btn btn-secondary">
+                ❌ Annuler
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="info-box" style="margin-top: 2rem; padding: 1.5rem; background: #e3f2fd; border-left: 4px solid #2196f3; border-radius: 8px;">
+    <h4 style="margin-top: 0; color: #1976d2;">ℹ️ Comment ça marche ?</h4>
+    <ul style="margin: 0; padding-left: 1.5rem; color: #555;">
+        <li>Sélectionnez un département et une promotion</li>
+        <li>Collez ou tapez la liste des cours (un par ligne)</li>
+        <li>Les numéros au début (1., 2., 3., etc.) seront automatiquement supprimés</li>
+        <li>Un code unique sera généré pour chaque cours</li>
+        <li>Tous les cours seront ajoutés en une seule opération</li>
+    </ul>
+</div>
+{% endblock %}

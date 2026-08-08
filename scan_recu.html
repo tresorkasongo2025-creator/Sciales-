@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}
+{% if mode == 'scan_ok' %}Scanner votre reçu – {{ recu.numero }}
+{% elif mode == 'deja_utilise' %}Reçu déjà utilisé
+{% elif mode == 'type_mismatch' %}Type de reçu incorrect
+{% else %}Reçu invalide{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine: #0d2666; --bleu: #1a4db8; --or: #bfa01a; }
+.scan-wrap { max-width: 540px; margin: 3rem auto; }
+
+.scan-card {
+    background: white; border-radius: 20px;
+    box-shadow: 0 6px 32px rgba(0,0,0,.12); overflow: hidden; }
+
+/* Statut header */
+.scan-hdr {
+    padding: 2rem 2rem 1.5rem;
+    text-align: center; }
+.scan-hdr.ok      { background: linear-gradient(135deg, var(--marine), var(--bleu)); color: white; }
+.scan-hdr.used    { background: linear-gradient(135deg, #6c1a1a, #dc3545); color: white; }
+.scan-hdr.bad     { background: linear-gradient(135deg, #3a3a3a, #666); color: white; }
+.scan-hdr.warning { background: linear-gradient(135deg, #7a5000, #e08a00); color: white; }
+
+.scan-hdr .big-icon { font-size: 3.5rem; display: block; margin-bottom: .5rem; }
+.scan-hdr h2 { margin: 0 0 .3rem; font-size: 1.4rem; }
+.scan-hdr p  { margin: 0; opacity: .88; font-size: .9rem; }
+
+.scan-body { padding: 2rem; }
+
+/* Reçu info box */
+.recu-box {
+    background: linear-gradient(135deg, #f5f8ff, #eef3ff);
+    border: 2px solid #c5d3f5; border-radius: 12px;
+    padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; text-align: center; }
+.recu-box .num {
+    font-size: 1.6rem; font-weight: 800; color: var(--marine);
+    letter-spacing: 1px; margin-bottom: .3rem; }
+.recu-box .sub { font-size: .82rem; color: #666; }
+
+/* Formulaire matricule */
+.mat-label { font-weight: 700; font-size: .9rem; color: #333; margin-bottom: .4rem; display: block; }
+.mat-input {
+    width: 100%; padding: .85rem 1rem; border: 2px solid #ddd;
+    border-radius: 10px; font-size: 1.05rem; box-sizing: border-box;
+    text-transform: uppercase; letter-spacing: 1px;
+    transition: border-color .2s; }
+.mat-input:focus { outline: none; border-color: var(--bleu); box-shadow: 0 0 0 3px rgba(26,77,184,.12); }
+.btn-access {
+    width: 100%; padding: .9rem; background: linear-gradient(135deg, var(--marine), var(--bleu));
+    color: white; border: none; border-radius: 10px; font-size: 1rem;
+    font-weight: 700; cursor: pointer; margin-top: .8rem; transition: opacity .2s; }
+.btn-access:hover { opacity: .88; }
+
+/* Error inline */
+.inline-error {
+    background: #fde8e8; border: 1.5px solid #f5aaaa; border-radius: 8px;
+    padding: .7rem 1rem; color: #6b1313; font-size: .88rem; margin-bottom: 1rem; }
+
+/* Used details */
+.used-details { font-size: .88rem; color: #555; }
+.used-row { display: flex; justify-content: space-between; padding: .45rem 0;
+    border-bottom: 1px solid #f0f0f0; }
+.used-row span:first-child { color: #888; }
+.used-row span:last-child  { font-weight: 600; color: var(--marine); }
+
+/* Security note */
+.security-note {
+    background: #fff8e1; border-left: 4px solid var(--or);
+    border-radius: 0 8px 8px 0; padding: .8rem 1rem;
+    font-size: .82rem; color: #555; margin-top: 1.2rem; }
+
+.btn-back {
+    display: block; text-align: center; margin-top: 1.2rem;
+    color: #888; font-size: .85rem; text-decoration: none; }
+.btn-back:hover { color: var(--bleu); }
+
+/* Loading overlay */
+.loading { display: none; }
+.btn-access.loading-state { opacity: .7; pointer-events: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="scan-wrap">
+
+{% if mode == 'scan_ok' %}
+<!-- ═══ REÇU VALIDE — formulaire matricule ═══ -->
+<div class="scan-card">
+    <div class="scan-hdr ok">
+        <span class="big-icon">✅</span>
+        <h2>Reçu valide</h2>
+        <p>Entrez votre matricule pour accéder à votre bulletin</p>
+    </div>
+    <div class="scan-body">
+        <div class="recu-box">
+            <div class="num">{{ recu.numero }}</div>
+            <div class="sub">Lot {{ recu.lot }} &nbsp;·&nbsp; Département {{ recu.dept }} &nbsp;·&nbsp; Année 20{{ recu.annee }}</div>
+        </div>
+
+        {% if error %}
+        <div class="inline-error">⚠ {{ error }}</div>
+        {% endif %}
+
+        <form method="POST" id="scanForm">
+            <label class="mat-label" for="matricule">Votre matricule étudiant</label>
+            <input type="text" name="matricule" id="matricule" class="mat-input"
+                   placeholder="Ex : ETU1234"
+                   value="{{ request.form.get('matricule', '') }}"
+                   autocomplete="off" required>
+            <button type="submit" class="btn-access" id="submitBtn"
+                    onclick="this.textContent='⏳ Recherche en cours…'">
+                🎓 Accéder à mon bulletin
+            </button>
+        </form>
+
+        <div class="security-note">
+            🔒 <strong>Sécurité :</strong> Ce reçu ne peut être utilisé qu'une seule fois.
+            Une fois scanné et votre matricule saisi, il sera définitivement enregistré à votre nom.
+        </div>
+
+        <a href="{{ url_for('index') }}" class="btn-back">← Retour à l'accueil</a>
+    </div>
+</div>
+
+{% elif mode == 'deja_utilise' %}
+<!-- ═══ REÇU DÉJÀ UTILISÉ ═══ -->
+<div class="scan-card">
+    <div class="scan-hdr used">
+        <span class="big-icon">🚫</span>
+        <h2>Reçu déjà utilisé</h2>
+        <p>Ce reçu a déjà servi à consulter un bulletin</p>
+    </div>
+    <div class="scan-body">
+        <div class="recu-box">
+            <div class="num">{{ recu.numero }}</div>
+            <div class="sub">Lot {{ recu.lot }} &nbsp;·&nbsp; Dépt {{ recu.dept }}</div>
+        </div>
+
+        <div class="used-details">
+            <div class="used-row">
+                <span>Matricule étudiant</span>
+                <span>{{ recu.matricule_etudiant or '—' }}</span>
+            </div>
+            <div class="used-row">
+                <span>Nom étudiant</span>
+                <span>{{ recu.nom_etudiant or '—' }}</span>
+            </div>
+            <div class="used-row">
+                <span>Date d'utilisation</span>
+                <span>{{ recu.date_utilisation.strftime('%d/%m/%Y à %H:%M') if recu.date_utilisation else '—' }}</span>
+            </div>
+        </div>
+
+        <div class="security-note">
+            🔒 Si vous n'avez pas utilisé ce reçu vous-même, signalez-le immédiatement à la comptabilité
+            de la Faculté. Chaque reçu est à usage unique et son utilisation est tracée.
+        </div>
+
+        {% if recu.bulletin_id %}
+        <a href="{{ url_for('bulletins_result', bid=recu.bulletin_id) }}"
+           style="display:block;text-align:center;margin-top:1rem;padding:.75rem;
+                  background:var(--bleu);color:white;border-radius:10px;font-weight:700;text-decoration:none;">
+            👁 Voir le bulletin associé
+        </a>
+        {% endif %}
+
+        <a href="{{ url_for('index') }}" class="btn-back">← Retour à l'accueil</a>
+    </div>
+</div>
+
+{% elif mode == 'deja_paye' %}
+<!-- ═══ BULLETIN DÉJÀ PAYÉ — reçu non consommé ═══ -->
+<div class="scan-card">
+    <div class="scan-hdr warning">
+        <span class="big-icon">⚠️</span>
+        <h2>Bulletin déjà payé</h2>
+        <p>Ce bulletin a déjà été réglé par une autre méthode</p>
+    </div>
+    <div class="scan-body">
+        <div class="recu-box">
+            <div class="num">{{ recu.numero }}</div>
+            <div class="sub">Lot {{ recu.lot }} &nbsp;·&nbsp; Dépt {{ recu.dept }}</div>
+        </div>
+
+        <div class="used-details">
+            <div class="used-row">
+                <span>Matricule</span>
+                <span>{{ matricule }}</span>
+            </div>
+            <div class="used-row">
+                <span>Étudiant</span>
+                <span>{{ bd.nom }}</span>
+            </div>
+            <div class="used-row">
+                <span>Méthode de paiement</span>
+                <span>{{ bd.methode_paiement or '—' }}</span>
+            </div>
+            <div class="used-row">
+                <span>Date de paiement</span>
+                <span>{{ bd.date_paiement.strftime('%d/%m/%Y à %H:%M') if bd.date_paiement else '—' }}</span>
+            </div>
+        </div>
+
+        <div class="security-note">
+            ✅ Votre reçu <strong>n'a pas été consommé</strong> — il est toujours valide et peut être
+            utilisé pour un autre bulletin. Consultez directement votre bulletin ci-dessous.
+        </div>
+
+        <a href="{{ url_for('bulletins_result', bid=bd.id) }}"
+           style="display:block;text-align:center;margin-top:1rem;padding:.75rem;
+                  background:var(--bleu);color:white;border-radius:10px;font-weight:700;text-decoration:none;">
+            👁 Voir mon bulletin
+        </a>
+
+        <a href="{{ url_for('index') }}" class="btn-back">← Retour à l'accueil</a>
+    </div>
+</div>
+
+{% elif mode == 'type_mismatch' %}
+<div class="scan-card">
+    <div class="scan-hdr warning">
+        <span class="big-icon">⚠️</span>
+        <h2>Type de reçu incorrect</h2>
+        <p>Ce reçu ne correspond pas à cet accès</p>
+    </div>
+    <div class="scan-body">
+        <div class="recu-box">
+            <div class="num">{{ recu.numero }}</div>
+            <div class="sub">
+                {% if recu.type_recu == 'resultat_recours' %}
+                    Reçu de consultation du recours 1ère session
+                {% elif recu.type_recu == 'session_2' %}
+                    Reçu de délibération 2ème session
+                {% elif recu.type_recu == 'recours_session_2' %}
+                    Reçu de consultation du recours 2ème session
+                {% else %}
+                    Reçu de soumission de recours
+                {% endif %}
+            </div>
+        </div>
+        <div class="inline-error">⚠ {{ error }}</div>
+        <div class="security-note">
+            Les reçus de délibération 1ère session, recours 1ère session,
+            délibération 2ème session et recours 2ème session sont indépendants
+            et ne peuvent pas être interchangeables.
+        </div>
+        <a href="{{ url_for('index') }}" class="btn-back">← Retour à l'accueil</a>
+    </div>
+</div>
+{% else %}
+<!-- ═══ REÇU INVALIDE ═══ -->
+<div class="scan-card">
+    <div class="scan-hdr bad">
+        <span class="big-icon">❌</span>
+        <h2>Reçu non reconnu</h2>
+        <p>Ce code QR ne correspond à aucun reçu dans notre système</p>
+    </div>
+    <div class="scan-body">
+        <div class="recu-box">
+            <div class="num" style="font-size:1rem;color:#888;">Code : {{ code }}</div>
+            <div class="sub">Document non authentifié</div>
+        </div>
+
+        <div class="security-note" style="border-color:#dc3545;background:#fde8e8;color:#6b1313;">
+            ⚠ Ce document pourrait être un faux. Ne pas l'accepter comme preuve de paiement.
+            Signalez-le à l'administration de la Faculté.
+        </div>
+
+        <a href="{{ url_for('index') }}" class="btn-back">← Retour à l'accueil</a>
+    </div>
+</div>
+{% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,823 @@
+{% extends "base.html" %}
+{% block title %}
+{% if mode == 'verif_ok' %}Vérification bulletin – {{ bd.numero_bulletin }}
+{% elif mode == 'result' %}Mon Bulletin – {{ bd.nom if bd else '' }}
+{% else %}Portail Bulletins – UNILU{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine: #0d2666; --bleu: #1a4db8; --or: #bfa01a; }
+.portail-hero {
+    background: linear-gradient(135deg, var(--marine) 0%, var(--bleu) 60%, #2563eb 100%);
+    color: white; padding: 3rem 2rem; text-align: center; border-radius: 16px;
+    margin-bottom: 2rem; position: relative; overflow: hidden; }
+.portail-hero::before {
+    content: '🎓'; position: absolute; right: -1rem; top: -1rem;
+    font-size: 8rem; opacity: .08; }
+.portail-hero h1 { margin: 0 0 .5rem; font-size: 2rem; }
+.portail-hero p  { margin: 0; opacity: .9; font-size: 1.05rem; }
+.search-card {
+    max-width: 520px; margin: 0 auto 2rem; background: white;
+    border-radius: 16px; padding: 2rem; box-shadow: 0 4px 24px rgba(0,0,0,.1); }
+.search-card h3 { margin-top: 0; color: var(--marine); font-size: 1.15rem; }
+.search-input {
+    width: 100%; padding: .8rem 1rem; border: 2px solid #ddd; border-radius: 10px;
+    font-size: 1rem; box-sizing: border-box; margin: .5rem 0 1rem;
+    transition: border-color .2s; }
+.search-input:focus { outline: none; border-color: var(--bleu); box-shadow: 0 0 0 3px rgba(26,77,184,.12); }
+.btn-search {
+    width: 100%; padding: .85rem; background: var(--bleu); color: white; border: none;
+    border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;
+    transition: background .2s; }
+.btn-search:hover { background: var(--marine); }
+.student-qr-separator {
+    display:flex; align-items:center; gap:.7rem; margin:1.2rem 0;
+    color:#999; font-size:.8rem; }
+.student-qr-separator::before, .student-qr-separator::after {
+    content:""; height:1px; background:#e3e7ef; flex:1; }
+.student-qr-actions { display:flex; gap:.7rem; flex-wrap:wrap; }
+.student-qr-btn {
+    flex:1; min-width:180px; padding:.75rem .8rem; border-radius:10px;
+    font-size:.9rem; font-weight:700; cursor:pointer; text-align:center;
+    box-sizing:border-box; transition:background .2s, transform .15s; }
+.student-qr-btn:hover { transform:translateY(-1px); }
+.student-qr-camera { background:#eef3ff; color:var(--marine); border:2px solid #c5d3f5; }
+.student-qr-camera:hover { background:#dfe8ff; }
+.student-qr-gallery { background:#f8f9fa; color:#444; border:2px solid #ddd; }
+.student-qr-gallery:hover { background:#eef0f3; }
+#studentQrPanel {
+    display:none; margin-top:1rem; padding:1rem; border-radius:12px;
+    background:#f6f8ff; border:1px solid #d8e1f5; text-align:center; }
+#studentQrReader {
+    width:100%; max-width:360px; margin:0 auto; overflow:hidden;
+    border-radius:10px; }
+#studentQrStatus { margin:.7rem 0 0; color:var(--marine); font-size:.82rem; font-weight:600; }
+.student-qr-stop {
+    margin-top:.7rem; padding:.45rem 1rem; border:0; border-radius:8px;
+    background:#dc3545; color:#fff; font-weight:700; cursor:pointer; }
+
+/* Locked bulletin */
+.locked-card {
+    max-width: 680px; margin: 0 auto; background: white;
+    border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.1); overflow: hidden; }
+.locked-hdr {
+    background: linear-gradient(135deg, var(--marine), var(--bleu));
+    color: white; padding: 1.5rem 2rem; }
+.locked-hdr h2 { margin: 0 0 .3rem; font-size: 1.3rem; }
+.locked-hdr p  { margin: 0; opacity: .85; font-size: .9rem; }
+.locked-body   { padding: 2rem; }
+.info-row { display: flex; justify-content: space-between; padding: .5rem 0;
+    border-bottom: 1px solid #f0f0f0; font-size: .92rem; }
+.info-row span:first-child { color: #666; }
+.info-row span:last-child  { font-weight: 600; color: var(--marine); }
+.lock-overlay {
+    background: linear-gradient(135deg, #f8f9ff, #eef2ff);
+    border: 2px dashed #c5d3f5; border-radius: 12px; padding: 2rem;
+    text-align: center; margin: 1.5rem 0; }
+.lock-overlay .lock-icon { font-size: 3rem; margin-bottom: .5rem; }
+.lock-overlay h3 { margin: 0 0 .5rem; color: var(--marine); }
+.lock-overlay p  { margin: 0 0 1rem; color: #555; font-size: .9rem; }
+.montant-badge {
+    display: inline-block; background: var(--marine); color: white;
+    font-size: 1.4rem; font-weight: 800; padding: .4rem 1.2rem; border-radius: 30px;
+    margin-bottom: 1rem; }
+
+/* Payment form */
+
+/* Unlocked bulletin */
+.unlocked-card {
+    max-width: 760px; margin: 0 auto; background: white;
+    border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.1); overflow: hidden; }
+.unlocked-hdr {
+    background: linear-gradient(135deg, var(--marine), var(--bleu));
+    color: white; padding: 1.5rem 2rem;
+    display: flex; justify-content: space-between; align-items: flex-start; }
+.receipt-badge {
+    background: rgba(255,255,255,.2); border-radius: 8px; padding: .5rem .9rem;
+    font-size: .8rem; text-align: right; }
+.receipt-badge strong { display: block; font-size: 1rem; }
+.unlocked-body { padding: 2rem; }
+.courses-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.courses-table th { background: var(--marine); color: white; padding: .5rem .7rem; text-align: left; }
+.courses-table td { padding: .5rem .7rem; border-bottom: 1px solid #eee; }
+.courses-table tr:nth-child(even) td { background: #f8f9ff; }
+.result-adm  { color: #198754; font-weight: 700; }
+.result-repr { color: #dc3545; font-weight: 700; }
+.result-ab   { color: #888; }
+.note-fail   { color: #dc3545; font-weight: 700; }
+.synth-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .8rem; margin: 1.2rem 0; }
+.synth-item { background: #f5f8ff; border-radius: 8px; padding: .8rem 1rem; }
+.synth-item .slbl { font-size: .78rem; color: #666; }
+.synth-item .sval { font-size: 1.1rem; font-weight: 800; color: var(--marine); }
+.decision-banner {
+    border-radius: 10px; padding: 1rem 1.5rem; text-align: center;
+    font-size: 1.3rem; font-weight: 800; margin: 1rem 0; }
+.decision-adm  { background: #d1f0e0; color: #0f5132; border: 2px solid #a3d9b8; }
+.decision-repr { background: #fde8e8; color: #6b1313; border: 2px solid #f5aaaa; }
+.download-bar {
+    display: flex; gap: 1rem; justify-content: center; padding: 1.5rem;
+    background: #f5f8ff; border-top: 1px solid #e0e8f5; }
+.btn-dl {
+    padding: .75rem 1.8rem; border-radius: 10px; border: none; cursor: pointer;
+    font-size: .95rem; font-weight: 700; text-decoration: none; display: inline-block; }
+.btn-dl-primary { background: var(--bleu); color: white; }
+.btn-dl-primary:hover { background: var(--marine); color: white; }
+.btn-dl-print { background: white; color: var(--marine); border: 2px solid var(--marine); }
+
+/* Verification */
+.verif-card {
+    max-width: 600px; margin: 0 auto; background: white;
+    border-radius: 16px; padding: 2.5rem 2rem; box-shadow: 0 4px 24px rgba(0,0,0,.1);
+    text-align: center; }
+.verif-ok  { border-top: 6px solid #198754; }
+.verif-fail { border-top: 6px solid #dc3545; }
+.verif-card .big-icon { font-size: 4rem; margin-bottom: 1rem; }
+
+/* List mode */
+.result-list { max-width: 620px; margin: 0 auto; }
+.result-item {
+    background: white; border-radius: 12px; padding: 1.2rem 1.5rem; margin-bottom: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,.08); display: flex; justify-content: space-between;
+    align-items: center; text-decoration: none; color: inherit;
+    border-left: 4px solid var(--bleu); transition: transform .15s, box-shadow .15s; }
+.result-item:hover { transform: translateX(4px); box-shadow: 0 4px 18px rgba(0,0,0,.12); }
+.result-item .ri-title { font-weight: 700; color: var(--marine); }
+.result-item .ri-sub   { font-size: .82rem; color: #666; margin-top: .2rem; }
+.paid-check { color: #198754; font-weight: 700; }
+.unpaid-lock { color: #888; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if mode == 'search' %}
+<!-- ═══════════════ MODE : RECHERCHE ═══════════════ -->
+<div class="portail-hero">
+    <h1>📋 Portail Bulletins Académiques</h1>
+    <p>Consultez vos résultats académiques de la Faculté des Sciences Sociales, Politiques et Administratives – UNILU</p>
+</div>
+
+<div class="search-card">
+    <h3>🔍 Accéder à mon bulletin</h3>
+    <p style="color:#666;font-size:.9rem;margin-top:0;">Entrez votre matricule étudiant ou scannez le QR code situé sur la face 1 de votre carte.</p>
+    <form id="bulletinSearchForm" method="POST" action="{{ url_for('bulletins_rechercher') }}">
+        <label style="font-weight:600;font-size:.88rem;color:#444;">Matricule étudiant</label>
+        <input id="studentMatricule" type="text" name="matricule" class="search-input"
+               placeholder="Ex : SSM-2021-2022060" autocomplete="off" required>
+        <button type="submit" class="btn-search">Rechercher mon bulletin →</button>
+
+        <div class="student-qr-separator"><span>ou utiliser la carte étudiant</span></div>
+        <div class="student-qr-actions">
+            <button type="button" class="student-qr-btn student-qr-camera"
+                    onclick="startStudentQrScanner()">
+                📷 Scanner avec la caméra
+            </button>
+            <label class="student-qr-btn student-qr-gallery">
+                🖼️ Choisir une photo
+                <input id="studentQrFile" type="file" accept="image/*"
+                       onchange="scanStudentQrImage(event)" style="display:none;">
+            </label>
+        </div>
+        <div id="studentQrPanel">
+            <div id="studentQrReader"></div>
+            <div id="studentQrStatus">Positionnez le QR code de la face 1 dans le cadre.</div>
+            <button type="button" class="student-qr-stop"
+                    onclick="stopStudentQrScanner()">✕ Annuler le scan</button>
+        </div>
+    </form>
+</div>
+
+<div style="text-align:center;color:#888;font-size:.85rem;margin-top:1rem;">
+    <p>Vous aurez besoin du reçu de paiement remis par la comptabilité pour accéder à votre bulletin.</p>
+</div>
+
+{% elif mode == 'list' %}
+<!-- ═══════════════ MODE : LISTE (plusieurs bulletins) ═══════════════ -->
+<div class="portail-hero" style="padding:2rem;">
+    <h1 style="font-size:1.5rem;">Bulletins trouvés pour <em>{{ matricule }}</em></h1>
+    <p>Plusieurs bulletins correspondent à ce matricule. Sélectionnez celui que vous souhaitez consulter.</p>
+</div>
+
+<div class="result-list">
+    {% for bd in resultats %}
+    <a href="{{ url_for('bulletins_result', bid=bd.id) }}" class="result-item">
+        <div>
+            <div class="ri-title">
+                {% set grid_type = bd.bul_session.type_grille|default('initial') %}
+                {% if grid_type == 'recours' %}
+                    🎓 Recours 1ère session
+                {% elif grid_type == 'session_2' %}
+                    📗 Délibération 2ème session
+                {% elif grid_type == 'recours_session_2' %}
+                    🎓 Recours 2ème session
+                {% else %}
+                    📘 Délibération 1ère session
+                {% endif %}
+                — {{ bd.bul_session.nom }}
+            </div>
+            <div class="ri-sub">
+                {{ bd.bul_session.promotion }} &nbsp;|&nbsp; {{ bd.bul_session.annee }}
+                &nbsp;|&nbsp; {{ bd.bul_session.semestre }}
+            </div>
+        </div>
+        <div>
+            {% if bd.paye %}
+                <span class="paid-check">✅ Débloqué</span>
+            {% else %}
+                <span class="unpaid-lock">
+                    🔒 Reçu
+                    {% if bd.bul_session.type_grille|default('initial') == 'recours' %}RR-
+                    {% elif bd.bul_session.type_grille|default('initial') == 'session_2' %}S2-
+                    {% elif bd.bul_session.type_grille|default('initial') == 'recours_session_2' %}R2-
+                    {% else %}B-{% endif %}
+                </span>
+            {% endif %}
+        </div>
+    </a>
+    {% endfor %}
+    <div style="text-align:center;margin-top:1rem;">
+        <a href="{{ url_for('bulletins_portail') }}" style="color:#1a4db8;">← Nouvelle recherche</a>
+    </div>
+</div>
+
+{% elif mode == 'result' %}
+<!-- ═══════════════ MODE : RÉSULTAT (verrouillé ou déverrouillé) ═══════════════ -->
+
+{% if not bd.paye %}
+<!-- BULLETIN VERROUILLÉ -->
+<div class="locked-card">
+    <div class="locked-hdr">
+        <div>
+            <h2>{{ bd.nom }}</h2>
+            <p>Matricule : {{ bd.matricule }} &nbsp;|&nbsp; {{ bs.nom }}</p>
+        </div>
+    </div>
+    <div class="locked-body">
+        {% set type_grille = bs.type_grille|default('initial') %}
+        {% set est_recours = type_grille in ['recours', 'recours_session_2'] %}
+        {% set est_session_2 = type_grille in ['session_2', 'recours_session_2'] %}
+        {% set libelle_etape = (
+            'Recours 1ère session' if type_grille == 'recours'
+            else 'Délibération 2ème session' if type_grille == 'session_2'
+            else 'Recours 2ème session' if type_grille == 'recours_session_2'
+            else 'Délibération 1ère session'
+        ) %}
+        {% set prefix_recu = (
+            'RR-' if type_grille == 'recours'
+            else 'S2-' if type_grille == 'session_2'
+            else 'R2-' if type_grille == 'recours_session_2'
+            else 'B-'
+        ) %}
+        <div class="info-row"><span>Promotion</span><span>{{ bs.promotion }}</span></div>
+        <div class="info-row"><span>Année académique</span><span>{{ bs.annee }}</span></div>
+        <div class="info-row"><span>Session</span><span>{{ bs.session_acad }}</span></div>
+        <div class="info-row"><span>Semestre</span><span>{{ bs.semestre }}</span></div>
+        <div class="info-row">
+            <span>Type d’accès</span>
+            <span>{{ libelle_etape }}</span>
+        </div>
+
+        <div class="lock-overlay">
+            <div class="lock-icon">🔒</div>
+            <h3>{{ libelle_etape }} disponible</h3>
+            <p>
+                Veuillez présenter un reçu <strong>{{ prefix_recu }}</strong> pour débloquer cette étape.
+            </p>
+            <div class="montant-badge">
+                Reçu {{ prefix_recu }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SCANNER REÇU -->
+<div id="scanCard" style="background:white;border-radius:16px;padding:2rem 1.5rem;
+     box-shadow:0 4px 20px rgba(0,0,0,.1);max-width:420px;margin:0 auto;text-align:center;">
+
+    <!-- Titre -->
+    <div style="font-size:2.8rem;margin-bottom:.5rem;">📷</div>
+    <h3 style="margin:0 0 .4rem;color:#0d2666;font-size:1.2rem;font-weight:800;">
+        Scannez votre reçu
+    </h3>
+    <p style="margin:0 0 1.5rem;color:#666;font-size:.88rem;">
+        {% set type_grille = bs.type_grille|default('initial') %}
+        {% set prefix_recu = 'RR-' if type_grille == 'recours' else 'S2-' if type_grille == 'session_2' else 'R2-' if type_grille == 'recours_session_2' else 'B-' %}
+            Pointez la caméra sur le QR code de votre reçu <strong>{{ prefix_recu }}</strong>.
+    </p>
+
+    <!-- Viewfinder caméra (caché jusqu'à activation) -->
+    <div id="viewfinderWrap" style="display:none;position:relative;margin-bottom:1rem;">
+        <video id="qrVideo" autoplay playsinline muted
+               style="width:100%;border-radius:12px;border:3px solid #0d2666;
+                      background:#000;max-height:320px;object-fit:cover;"></video>
+        <!-- cadre de visée -->
+        <div style="position:absolute;inset:0;display:flex;align-items:center;
+                    justify-content:center;pointer-events:none;">
+            <div style="width:160px;height:160px;border:3px solid #bfa01a;border-radius:12px;
+                        box-shadow:0 0 0 9999px rgba(0,0,0,.35);"></div>
+        </div>
+        <canvas id="qrCanvas" style="display:none;"></canvas>
+        <p id="scanStatus" style="margin:.5rem 0 0;font-size:.82rem;color:#0d2666;font-weight:600;">
+            🔍 Recherche du QR code…
+        </p>
+        <button onclick="stopScanner()"
+                style="margin-top:.6rem;background:#dc3545;color:white;border:none;
+                       border-radius:8px;padding:.45rem 1.2rem;font-size:.85rem;
+                       cursor:pointer;font-weight:600;">✕ Annuler</button>
+    </div>
+
+    <!-- Boutons principaux (visibles avant scan) -->
+    <div id="btnGroup" style="display:flex;flex-direction:column;gap:.8rem;">
+        <button onclick="startCamera()"
+                style="background:linear-gradient(135deg,#0d2666,#1a4db8);color:white;
+                       border:none;border-radius:12px;padding:1rem 1.5rem;font-size:1rem;
+                       font-weight:800;cursor:pointer;display:flex;align-items:center;
+                       justify-content:center;gap:.6rem;width:100%;box-shadow:0 4px 14px rgba(13,38,102,.3);">
+            <span style="font-size:1.4rem;">📷</span> Scanner le QR code
+        </button>
+
+        <label style="background:#f0f4ff;color:#0d2666;border:2px solid #c5d3f5;
+                      border-radius:12px;padding:.85rem 1.5rem;font-size:.95rem;
+                      font-weight:700;cursor:pointer;display:flex;align-items:center;
+                      justify-content:center;gap:.6rem;width:100%;box-sizing:border-box;">
+            <span style="font-size:1.3rem;">🖼️</span> Choisir une image (galerie)
+            <input type="file" id="galleryInput" accept="image/*" onchange="readFromGallery(event)"
+                   style="display:none;">
+        </label>
+    </div>
+
+    <!-- Message d'erreur -->
+    <div id="scanError" style="display:none;background:#fff0f0;border:1.5px solid #f5c6cb;
+         border-radius:9px;padding:.7rem 1rem;font-size:.83rem;color:#842029;margin-top:1rem;">
+    </div>
+
+    <div style="margin-top:1.3rem;">
+        <a href="{{ url_for('bulletins_portail') }}"
+           style="color:#aaa;font-size:.82rem;text-decoration:none;">← Nouvelle recherche</a>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+<script>
+let videoStream = null;
+let scanInterval = null;
+
+function startCamera() {
+    document.getElementById('btnGroup').style.display = 'none';
+    document.getElementById('viewfinderWrap').style.display = 'block';
+    document.getElementById('scanError').style.display = 'none';
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+        .then(function(stream) {
+            videoStream = stream;
+            const video = document.getElementById('qrVideo');
+            video.srcObject = stream;
+            video.play();
+            scanInterval = setInterval(scanFrame, 250);
+        })
+        .catch(function(err) {
+            stopScanner();
+            showError('Impossible d\'accéder à la caméra. Utilisez « Choisir une image » à la place.');
+        });
+}
+
+function scanFrame() {
+    const video = document.getElementById('qrVideo');
+    if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+    const canvas = document.getElementById('qrCanvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'dontInvert' });
+    if (code && code.data) {
+        stopScanner();
+        handleQRCode(code.data);
+    }
+}
+
+function stopScanner() {
+    clearInterval(scanInterval);
+    scanInterval = null;
+    if (videoStream) { videoStream.getTracks().forEach(t => t.stop()); videoStream = null; }
+    document.getElementById('viewfinderWrap').style.display = 'none';
+    document.getElementById('btnGroup').style.display = 'flex';
+}
+
+function readFromGallery(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.getElementById('qrCanvas');
+            canvas.width  = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: 'attemptBoth' });
+            if (code && code.data) {
+                handleQRCode(code.data);
+            } else {
+                showError('Aucun QR code trouvé dans cette image. Essayez avec une photo plus nette.');
+            }
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    // reset input pour permettre de re-sélectionner le même fichier
+    event.target.value = '';
+}
+
+function handleQRCode(data) {
+    // Le QR code contient soit l'URL complète /scan/CODE, soit juste le CODE
+    let code = data;
+    const match = data.match(/\/scan\/([A-Za-z0-9]+)/);
+    if (match) {
+        code = match[1];
+    }
+    // Vérification basique : code hex 16 chars
+    if (/^[A-Fa-f0-9]{16}$/i.test(code)) {
+        // Conserver le bulletin ouvert : le reçu doit correspondre à cette
+        // étape précise, pas seulement au matricule de l'étudiant.
+        window.location.href = '/scan/' + code + '?bid={{ bd.id }}';
+    } else {
+        showError('QR code non reconnu. Assurez-vous de scanner le reçu officiel UNILU.');
+    }
+}
+
+function showError(msg) {
+    const el = document.getElementById('scanError');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'block';
+}
+</script>
+
+{% else %}
+<!-- BULLETIN DÉVERROUILLÉ -->
+<div class="unlocked-card">
+    <div class="unlocked-hdr">
+        <div>
+            <h2 style="margin:0 0 .3rem;font-size:1.4rem;">
+                {% set type_grille = bs.type_grille|default('initial') %}
+                {% if type_grille == 'recours' %}🎓 Recours 1ère session
+                {% elif type_grille == 'session_2' %}📗 Délibération 2ème session
+                {% elif type_grille == 'recours_session_2' %}🎓 Recours 2ème session
+                {% else %}📘 Délibération 1ère session{% endif %}
+            </h2>
+            <div style="font-size:.95rem;font-weight:700;margin:.2rem 0 .3rem;">{{ bd.nom }}</div>
+            <p style="margin:0;opacity:.85;font-size:.9rem;">
+                {% if bs.departement %}{{ bs.departement }} &nbsp;|&nbsp; {% endif %}{{ bs.promotion }} &nbsp;|&nbsp; {{ bs.annee }} &nbsp;|&nbsp; {{ bs.session_acad }}
+            </p>
+        </div>
+        <div class="receipt-badge">
+            <span>Réf. paiement</span>
+            <strong>{{ bd.reference_paiement or '—' }}</strong>
+            <span style="font-size:.75rem;">{{ bd.methode_paiement }}</span>
+        </div>
+    </div>
+
+    <div class="unlocked-body">
+        <!-- Infos étudiant -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:1.2rem;">
+            <div class="info-row"><span>Matricule</span><span>{{ bd.matricule }}</span></div>
+            <div class="info-row"><span>Sexe</span><span>{{ bd.sexe }}</span></div>
+            <div class="info-row"><span>Semestre</span><span>{{ bs.semestre }}</span></div>
+        </div>
+
+        <!-- Tableau des cours -->
+        <table class="courses-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Cours</th>
+                    <th style="text-align:center;">Cr.</th>
+                    <th style="text-align:center;">Note /20</th>
+                    <th style="text-align:center;">Pts obtenus</th>
+                    <th style="text-align:center;">Pts max</th>
+                    <th style="text-align:center;">Résultat</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for c in etu.cours %}
+                <tr>
+                    <td style="color:#888;">{{ loop.index }}</td>
+                    <td>{{ c.name }}</td>
+                    <td style="text-align:center;">{{ c.credit | int }}</td>
+                    <td style="text-align:center;">
+                        {% if c.note is not none %}
+                            <span class="{{ 'note-fail' if c.note < 10 else '' }}">{{ "%.1f"|format(c.note) }}</span>
+                        {% else %}AB{% endif %}
+                    </td>
+                    <td style="text-align:center;">{{ c.pondere | int }}</td>
+                    <td style="text-align:center;">{{ c.max_pondere | int }}</td>
+                    <td style="text-align:center;">
+                        {% if c.result == 'ADM' %}<span class="result-adm">ADM</span>
+                        {% elif c.result == 'REPR' %}<span class="result-repr">REPR</span>
+                        {% else %}<span class="result-ab">AB</span>{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Synthèse -->
+        <div class="synth-grid">
+            <div class="synth-item">
+                <div class="slbl">Échecs</div>
+                <div class="sval">{{ etu.nb_echecs }}</div>
+            </div>
+            <div class="synth-item">
+                <div class="slbl">Total pondéré</div>
+                <div class="sval">{{ etu.total | int }} / {{ etu.cours | sum(attribute='max_pondere') | int }}</div>
+            </div>
+            <div class="synth-item">
+                <div class="slbl">Pourcentage</div>
+                <div class="sval">{{ "%.2f"|format(etu.pct) }}%</div>
+            </div>
+            <div class="synth-item">
+                <div class="slbl">Crédits validés</div>
+                <div class="sval">{{ etu.cr_val | int }}</div>
+            </div>
+            <div class="synth-item">
+                <div class="slbl">Crédits non validés</div>
+                <div class="sval">{{ etu.cr_nval | int }}</div>
+            </div>
+            <div class="synth-item">
+                <div class="slbl">Moyenne /20</div>
+                <div class="sval">{{ "%.2f"|format(etu.moyenne) }}</div>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;">
+            <div>
+                <span style="font-size:.88rem;color:#666;">Appréciation : </span>
+                <strong>{{ etu.appre }}</strong>
+            </div>
+            {% set dec = etu.decision | upper %}
+            <div class="decision-banner {{ 'decision-adm' if dec in ('ADM','COMP') else 'decision-repr' }}"
+                 style="flex:1;min-width:200px;">
+                DÉCISION DU JURY : {{ dec }}
+            </div>
+        </div>
+
+        <!-- N° bulletin -->
+        <div style="text-align:center;margin-top:1rem;padding:.8rem;background:#f8f9ff;border-radius:8px;
+                    font-size:.8rem;color:#888;border:1px solid #e0e8f5;">
+            🔐 N° Bulletin : <strong>{{ bd.numero_bulletin }}</strong>
+            &nbsp;|&nbsp;
+            <a href="{{ url_for('bulletins_verifier_qr', numero=bd.numero_bulletin) }}"
+               style="color:#1a4db8;">Vérifier l'authenticité</a>
+        </div>
+    </div>
+
+    <!-- Barre de téléchargement -->
+    <div class="download-bar">
+        <button onclick="ouvrirApercu({{ bd.id }})" class="btn-dl"
+                style="background:#0d2666;color:white;">
+            👁 Aperçu PDF
+        </button>
+        <a href="{{ url_for('bulletins_telecharger', bid=bd.id) }}" class="btn-dl btn-dl-primary">
+            ⬇ Télécharger le PDF
+        </a>
+        <button onclick="window.print()" class="btn-dl btn-dl-print">🖨 Imprimer</button>
+        <a href="{{ url_for('bulletins_portail') }}" class="btn-dl"
+           style="background:#f0f0f0;color:#444;">← Retour</a>
+    </div>
+</div>
+
+<!-- ══ MODAL APERÇU PDF ══ -->
+<div id="apercuModal" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.75); backdrop-filter:blur(4px);
+    flex-direction:column; align-items:center; justify-content:center;">
+
+    <!-- Barre du modal -->
+    <div style="
+        width:min(92vw,900px); background:#0d2666; color:white;
+        padding:.65rem 1.2rem; border-radius:12px 12px 0 0;
+        display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+        <span style="font-weight:700;font-size:.95rem;">👁 Prévisualisation du bulletin</span>
+        <div style="display:flex;gap:.6rem;align-items:center;">
+            <a id="apercuDlLink" href="{{ url_for('bulletins_telecharger', bid=bd.id) }}"
+               style="background:#1a4db8;color:white;padding:.35rem .9rem;border-radius:6px;
+                      font-size:.83rem;font-weight:700;text-decoration:none;">
+                ⬇ Télécharger
+            </a>
+            <button onclick="fermerApercu()"
+                    style="background:rgba(255,255,255,.15);color:white;border:none;
+                           border-radius:6px;padding:.35rem .8rem;font-size:.9rem;
+                           cursor:pointer;font-weight:700;">✕ Fermer</button>
+        </div>
+    </div>
+
+    <!-- Iframe PDF -->
+    <iframe id="apercuIframe" src="" style="
+        width:min(92vw,900px); height:80vh;
+        border:none; border-radius:0 0 12px 12px;
+        background:white;">
+    </iframe>
+</div>
+
+<script>
+function ouvrirApercu(bid) {
+    const modal = document.getElementById('apercuModal');
+    const iframe = document.getElementById('apercuIframe');
+    iframe.src = '/bulletins/apercu/' + bid;
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function fermerApercu() {
+    const modal = document.getElementById('apercuModal');
+    document.getElementById('apercuIframe').src = '';
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+}
+// Fermer en cliquant sur le fond
+document.getElementById('apercuModal').addEventListener('click', function(e) {
+    if (e.target === this) fermerApercu();
+});
+// Fermer avec Échap
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fermerApercu();
+});
+</script>
+{% endif %}
+
+{% elif mode == 'verif_ok' %}
+<!-- ═══════════════ MODE : VÉRIFICATION QR – OK ═══════════════ -->
+<div class="verif-card verif-ok" style="margin-top:2rem;">
+    <div class="big-icon">✅</div>
+    <h2 style="color:#0f5132;">Bulletin authentique</h2>
+    <p style="color:#555;">Ce bulletin est officiel et a été émis par la Faculté des Sciences Sociales, Politiques et Administratives de l'Université de Lubumbashi.</p>
+    <div style="background:#d1f0e0;border-radius:10px;padding:1rem;margin:1rem 0;text-align:left;">
+        <strong style="display:block;margin-bottom:.5rem;color:#0f5132;">Informations du bulletin :</strong>
+        <div class="info-row"><span>Matricule</span><span>{{ bd.matricule }}</span></div>
+        <div class="info-row"><span>Nom</span><span>{{ bd.nom }}</span></div>
+        <div class="info-row"><span>Session</span><span>{{ bs.nom }}</span></div>
+        <div class="info-row"><span>N° Bulletin</span><span>{{ bd.numero_bulletin }}</span></div>
+        <div class="info-row"><span>Décision du jury</span><span>{{ etu.decision | upper }}</span></div>
+    </div>
+    <a href="{{ url_for('index') }}" style="color:#1a4db8;">← Retour à l'accueil</a>
+</div>
+
+{% elif mode == 'verif_fail' %}
+<!-- ═══════════════ MODE : VÉRIFICATION QR – ÉCHEC ═══════════════ -->
+<div class="verif-card verif-fail" style="margin-top:2rem;">
+    <div class="big-icon">❌</div>
+    <h2 style="color:#6b1313;">Bulletin non reconnu</h2>
+    <p style="color:#555;">Le numéro <strong>{{ numero }}</strong> ne correspond à aucun bulletin dans notre base de données. Ce document pourrait être un faux.</p>
+    <a href="{{ url_for('index') }}" style="color:#1a4db8;">← Retour à l'accueil</a>
+</div>
+{% endif %}
+
+{% if mode == 'search' %}
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+let studentQrScanner = null;
+let studentQrScanning = false;
+
+function setStudentQrStatus(message, isError = false) {
+    const status = document.getElementById('studentQrStatus');
+    if (status) {
+        status.textContent = message;
+        status.style.color = isError ? '#b42318' : '#0d2666';
+    }
+}
+
+function getStudentMatriculeFromQr(rawValue) {
+    const raw = String(rawValue || '').trim();
+    if (!raw) return '';
+
+    function findInObject(value) {
+        if (!value || typeof value !== 'object') return '';
+        for (const [key, item] of Object.entries(value)) {
+            const normalizedKey = key.toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9]/g, '');
+            if (['matricule', 'matriculeetudiant', 'codeidfac', 'studentid'].includes(normalizedKey)
+                && typeof item === 'string' && item.trim()) {
+                return item.trim();
+            }
+            const nested = findInObject(item);
+            if (nested) return nested;
+        }
+        return '';
+    }
+
+    try {
+        const parsed = JSON.parse(raw);
+        const fromJson = findInObject(parsed);
+        if (fromJson) return fromJson;
+    } catch (error) {
+        // Certains QR contiennent directement le matricule au lieu du JSON.
+    }
+
+    const labeled = raw.match(/(?:matricule|code[\s_-]*id[\s_-]*fac|student[\s_-]*id)\s*["']?\s*[:=]\s*["']?([A-Za-z0-9][A-Za-z0-9-]*)/i);
+    if (labeled) return labeled[1];
+
+    // Dernier format accepté : QR contenant uniquement le matricule.
+    if (/^[A-Za-z0-9][A-Za-z0-9-]{2,59}$/.test(raw)) return raw;
+    return '';
+}
+
+function submitStudentQrResult(decodedText) {
+    const matricule = getStudentMatriculeFromQr(decodedText);
+    if (!matricule) {
+        setStudentQrStatus('QR non reconnu. Scannez le QR de la face 1 de votre carte étudiant.', true);
+        return;
+    }
+
+    const input = document.getElementById('studentMatricule');
+    input.value = matricule.toUpperCase();
+    setStudentQrStatus('Matricule trouvé : ' + input.value + '. Recherche en cours…');
+    stopStudentQrScanner().then(() => {
+        document.getElementById('bulletinSearchForm').submit();
+    });
+}
+
+function ensureStudentQrScanner() {
+    if (!studentQrScanner) {
+        studentQrScanner = new Html5Qrcode('studentQrReader');
+    }
+    return studentQrScanner;
+}
+
+async function startStudentQrScanner() {
+    if (typeof Html5Qrcode === 'undefined') {
+        setStudentQrStatus('Le module de scan est indisponible. Saisissez votre matricule manuellement.', true);
+        document.getElementById('studentQrPanel').style.display = 'block';
+        return;
+    }
+
+    const panel = document.getElementById('studentQrPanel');
+    panel.style.display = 'block';
+    setStudentQrStatus('Demande d’accès à la caméra…');
+
+    try {
+        const scanner = ensureStudentQrScanner();
+        await scanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 },
+            decodedText => {
+                if (studentQrScanning) {
+                    studentQrScanning = false;
+                    submitStudentQrResult(decodedText);
+                }
+            },
+            () => {}
+        );
+        studentQrScanning = true;
+        setStudentQrStatus('Positionnez le QR code de la face 1 dans le cadre.');
+    } catch (error) {
+        console.error('Erreur caméra QR étudiant:', error);
+        studentQrScanning = false;
+        setStudentQrStatus('Impossible d’accéder à la caméra. Autorisez-la ou choisissez une photo.', true);
+    }
+}
+
+async function stopStudentQrScanner() {
+    studentQrScanning = false;
+    if (studentQrScanner) {
+        try {
+            await studentQrScanner.stop();
+            studentQrScanner.clear();
+        } catch (error) {
+            // Le scanner peut déjà être arrêté après une lecture réussie.
+        }
+    }
+    const panel = document.getElementById('studentQrPanel');
+    if (panel) panel.style.display = 'none';
+}
+
+async function scanStudentQrImage(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (typeof Html5Qrcode === 'undefined') {
+        setStudentQrStatus('Le module de scan est indisponible. Saisissez votre matricule manuellement.', true);
+        document.getElementById('studentQrPanel').style.display = 'block';
+        return;
+    }
+
+    await stopStudentQrScanner();
+    document.getElementById('studentQrPanel').style.display = 'block';
+    setStudentQrStatus('Lecture de la photo en cours…');
+
+    try {
+        const scanner = ensureStudentQrScanner();
+        const decodedText = await scanner.scanFile(file, true);
+        submitStudentQrResult(decodedText);
+    } catch (error) {
+        console.error('Erreur lecture QR étudiant:', error);
+        setStudentQrStatus('Aucun QR reconnu. Utilisez une photo nette de la face 1 de la carte.', true);
+    }
+}
+</script>
+{% endif %}
+{% endblock %}

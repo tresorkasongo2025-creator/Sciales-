@@ -1,0 +1,768 @@
+{% extends "base.html" %}
+{% block title %}Session – {{ bs.nom }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-banner { background: linear-gradient(135deg, #0d2666 0%, #1a4db8 100%);
+    color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; }
+.page-banner h2 { margin: 0 0 .3rem; }
+.page-banner p  { margin: 0; opacity: .85; font-size: .92rem; }
+.meta-bar { display: flex; gap: 1.5rem; flex-wrap: wrap; background: white;
+    padding: 1rem 1.5rem; border-radius: 10px; margin-bottom: 1.5rem;
+    box-shadow: 0 1px 6px rgba(0,0,0,.07); font-size: .9rem; }
+.meta-bar span strong { color: #0d2666; }
+.panel { background: white; border-radius: 12px; padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+.panel-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.panel-hdr h3 { margin: 0; color: #0d2666; }
+.table-bul { width: 100%; border-collapse: collapse; }
+.table-bul th { background: #0d2666; color: white; padding: .6rem .9rem; font-size: .85rem; text-align: left; }
+.table-bul td { padding: .6rem .9rem; border-bottom: 1px solid #eee; font-size: .88rem; }
+.table-bul tr:hover td { background: #f5f8ff; }
+.badge-paid   { background: #198754; color: white; padding: .18rem .55rem; border-radius: 20px; font-size: .78rem; }
+.badge-unpaid { background: #6c757d; color: white; padding: .18rem .55rem; border-radius: 20px; font-size: .78rem; }
+.btn-sm { padding: .3rem .7rem; font-size: .82rem; border-radius: 5px; border: none;
+    cursor: pointer; text-decoration: none; display: inline-block; }
+.btn-blue  { background: #1a4db8; color: white; }
+.btn-green { background: #198754; color: white; }
+.montant-form { display: flex; gap: .5rem; align-items: center; }
+.montant-form input { padding: .35rem .6rem; border: 1.5px solid #ddd; border-radius: 6px;
+    width: 110px; font-size: .9rem; }
+.search-bar { padding: .5rem 1rem; border: 1.5px solid #ddd; border-radius: 7px;
+    font-size: .9rem; width: 250px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-banner">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.6rem;">
+        <div>
+            <h2>📋 {{ bs.nom }}</h2>
+            <p>{{ bs.session_acad }} &nbsp;|&nbsp; {{ bs.semestre }} &nbsp;|&nbsp; Année {{ bs.annee }}
+                &nbsp;|&nbsp;
+                {% if bs.type_grille|default('initial') == 'recours' %}Recours 1ère session
+                {% elif bs.type_grille|default('initial') == 'session_2' %}Délibération 2ème session
+                {% elif bs.type_grille|default('initial') == 'recours_session_2' %}Recours 2ème session
+                {% else %}Délibération 1ère session{% endif %}
+            </p>
+        </div>
+        <!-- ── Opérateur courant + changer de nom ── -->
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;">
+            <div id="operatorBadge" style="display:flex;align-items:center;gap:.5rem;">
+                <span style="background:rgba(255,255,255,.18);border-radius:20px;
+                             padding:.2rem .75rem;font-size:.85rem;font-weight:600;">
+                    👤 <span id="operatorLabel">{{ session.get('decanat_operator', '—') }}</span>
+                </span>
+                <button type="button" onclick="toggleOperatorForm()"
+                        title="Changer d'opérateur"
+                        style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);
+                               color:white;border-radius:6px;padding:.2rem .6rem;
+                               font-size:.82rem;cursor:pointer;">✏️ Changer</button>
+            </div>
+            <div id="operatorForm" style="display:none;">
+                <form method="POST" action="{{ url_for('decanat_switch_operator') }}"
+                      style="display:flex;gap:.4rem;align-items:center;"
+                      onsubmit="return validateOperator(this)">
+                    <input type="hidden" name="next" value="{{ request.url }}">
+                    <input type="text" name="operator_name" id="operatorInput"
+                           placeholder="Votre nom complet"
+                           value="{{ session.get('decanat_operator', '') }}"
+                           maxlength="80" required
+                           style="padding:.3rem .6rem;border-radius:6px;border:1.5px solid rgba(255,255,255,.5);
+                                  background:rgba(255,255,255,.15);color:white;font-size:.85rem;
+                                  width:200px;outline:none;"
+                           onfocus="this.style.borderColor='white'"
+                           onblur="this.style.borderColor='rgba(255,255,255,.5)'">
+                    <button type="submit"
+                            style="background:#198754;color:white;border:none;border-radius:6px;
+                                   padding:.3rem .75rem;font-size:.82rem;cursor:pointer;
+                                   font-weight:700;">✔ OK</button>
+                    <button type="button" onclick="toggleOperatorForm()"
+                            style="background:rgba(255,255,255,.2);color:white;border:none;
+                                   border-radius:6px;padding:.3rem .65rem;font-size:.82rem;
+                                   cursor:pointer;">✕</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="meta-bar">
+    <span>📅 Importé le <strong>{{ bs.date_import.strftime('%d/%m/%Y à %H:%M') }}</strong></span>
+    <span>👥 <strong>{{ bulletins | length }}</strong> bulletins</span>
+    <span>✅ <strong>{{ bulletins | selectattr('paye') | list | length }}</strong> payés</span>
+    <span>💰 <strong>{{ "{:,}".format(bs.montant_fc) }} FC</strong> / bulletin</span>
+    <span>💵 Recettes : <strong>{{ "{:,}".format(bulletins | selectattr('paye') | sum(attribute='montant_paye')) }} FC</strong></span>
+</div>
+
+{% if nb_zero_moyenne is defined and nb_zero_moyenne > 0 %}
+<div style="background:#fff3cd;border:1.5px solid #ffc107;border-radius:10px;
+            padding:.9rem 1.2rem;margin-bottom:1.2rem;
+            display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+    <span style="font-size:1.4rem;">⚠️</span>
+    <div>
+        <strong style="color:#856404;">
+            {{ nb_zero_moyenne }} étudiant{{ 's' if nb_zero_moyenne > 1 else '' }}
+            avec une moyenne de 0,00
+        </strong>
+        <div style="color:#856404;font-size:.88rem;margin-top:.15rem;">
+            La colonne <em>Moyenne</em> était présente dans la grille mais ces bulletins affichent 0,00.
+            Les téléchargements sont bloqués pour ces étudiants.
+            Réimportez la grille corrigée pour résoudre ce problème.
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Barre d'actions -->
+<div style="background:white;padding:1rem 1.5rem;border-radius:10px;margin-bottom:1rem;
+     box-shadow:0 1px 6px rgba(0,0,0,.07);display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+    <strong>Montant :</strong>
+    <form method="POST" action="{{ url_for('decanat_bulletins_update_montant', sid=bs.id) }}"
+          class="montant-form">
+        <input type="number" name="montant_fc" value="{{ bs.montant_fc }}" min="0" step="500">
+        <button type="submit" class="btn-sm btn-blue">Enregistrer</button>
+    </form>
+
+    <!-- Date commune pour les activations manuelles -->
+    <div style="display:flex;align-items:center;gap:.45rem;
+                background:#f0f7ff;border:1.5px solid #b8d4f5;border-radius:8px;
+                padding:.35rem .75rem;">
+        <span style="font-size:.83rem;font-weight:700;color:#0d2666;white-space:nowrap;">
+            📅 Date paiement :
+        </span>
+        <input type="date" id="dateActivation"
+               onchange="syncDateActivation(this.value)"
+               style="border:none;background:transparent;font-size:.88rem;
+                      color:#0d2666;font-weight:600;cursor:pointer;outline:none;">
+    </div>
+
+    <!-- Tout activer -->
+    <form method="POST" action="{{ url_for('decanat_bulletins_activer_tout', sid=bs.id) }}"
+          style="display:inline;"
+          onsubmit="document.querySelector('#form-activer-tout input[name=date_paiement]').value=document.getElementById('dateActivation').value; return confirm('Activer TOUS les bulletins non-payés de cette session ?');"
+          id="form-activer-tout">
+        <input type="hidden" name="date_paiement">
+        <button type="submit" class="btn-sm"
+                style="background:#198754;color:white;font-weight:700;">
+            🚀 Tout activer
+        </button>
+    </form>
+
+    <!-- Activer par liste -->
+    <button type="button" onclick="document.getElementById('modalListe').style.display='flex';"
+            class="btn-sm" style="background:#6f42c1;color:white;font-weight:700;">
+        📋 Par liste / PDF
+    </button>
+
+    <a href="{{ url_for('decanat_bulletins_zip', sid=bs.id) }}" class="btn-sm btn-green" target="_blank">⬇ ZIP (tous)</a>
+    <a href="{{ url_for('decanat_releves_cotes_zip', sid=bs.id) }}"
+       class="btn-sm" style="background:#6f42c1;color:white;" target="_blank">
+        📄 Relevés de cotes
+    </a>
+    <a href="{{ url_for('decanat_non_payes_export_csv', sid=bs.id) }}"
+       class="btn-sm"
+       style="background:#dc3545;color:white;"
+       title="Exporter la liste des non-payés de cette session en CSV">
+        📥 Non-payés CSV
+    </a>
+    <a href="{{ url_for('decanat_bulletins') }}" style="color:#888;font-size:.88rem;margin-left:auto;">← Retour</a>
+</div>
+
+<!-- ══ AJOUT MANUEL D'UN PAIEMENT ══ -->
+<div class="panel" style="margin-bottom:1rem;border:2px solid #bfa01a;background:#fffdf2;">
+    <div class="panel-hdr">
+        <h3 style="color:#7a5000;">➕ Ajouter un étudiant manuellement</h3>
+    </div>
+    <p style="font-size:.86rem;color:#665;margin:0 0 1rem;">
+        Pour un étudiant qui a payé mais dont le résultat n'était pas encore disponible.
+        Le reçu officiel sera vérifié et consommé une seule fois.
+    </p>
+    <div style="background:#fff8e1;border-radius:8px;padding:.65rem .8rem;margin-bottom:1rem;
+                font-size:.82rem;color:#6b5a2a;">
+        <strong>Session sélectionnée :</strong> {{ bs.departement or '—' }} —
+        {{ bs.promotion }} —
+        {% if bs.type_grille|default('initial') == 'recours' %}Recours 1ère session
+        {% elif bs.type_grille|default('initial') == 'session_2' %}Deuxième session
+        {% elif bs.type_grille|default('initial') == 'recours_session_2' %}Recours 2ème session
+        {% else %}Première session{% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('decanat_bulletins_ajouter_manuel', sid=bs.id) }}"
+          style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:.8rem;align-items:end;"
+          onsubmit="return confirm('Valider ce paiement manuellement et consommer le reçu officiel ?');">
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Département</label>
+            <input type="text" name="departement" value="{{ bs.departement or '' }}" readonly
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;background:#f4f1e3;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Promotion</label>
+            <input type="text" name="promotion" value="{{ bs.promotion or '' }}" readonly
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;background:#f4f1e3;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Année académique</label>
+            <input type="text" name="annee" value="{{ bs.annee or '' }}" readonly
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;background:#f4f1e3;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Session</label>
+            <input type="text" name="session" value="{{ bs.session_acad or '' }}" readonly
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;background:#f4f1e3;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Nom complet</label>
+            <input type="text" name="nom" required placeholder="Nom complet"
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Matricule</label>
+            <input type="text" name="matricule" required placeholder="CODE-ID FAC"
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;text-transform:uppercase;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Numéro du reçu</label>
+            <input type="text" name="numero_recu" required placeholder="B1-RI-001-S2-26"
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;text-transform:uppercase;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Montant (FC)</label>
+            <input type="number" name="montant" value="{{ bs.montant_fc or 5000 }}" min="1" required
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;">
+        </div>
+        <div>
+            <label style="display:block;font-size:.78rem;font-weight:700;color:#555;">Date du paiement</label>
+            <input type="date" name="date_paiement"
+                   style="width:100%;box-sizing:border-box;padding:.45rem .6rem;border:1.5px solid #d8c77a;border-radius:6px;">
+        </div>
+        <div>
+            <button type="submit" class="btn-sm"
+                    style="background:#7a5000;color:white;font-weight:700;padding:.55rem .9rem;">
+                ✅ Valider le paiement
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ══ MODAL ACTIVER PAR LISTE ══ -->
+<div id="modalListe" style="
+    display:none; position:fixed; inset:0; z-index:10001;
+    background:rgba(0,0,0,.65); backdrop-filter:blur(4px);
+    align-items:center; justify-content:center;">
+
+  <div style="background:white; border-radius:14px; width:min(96vw,540px);
+              box-shadow:0 8px 40px rgba(0,0,0,.3); overflow:hidden;">
+
+    <!-- En-tête -->
+    <div style="background:linear-gradient(135deg,#4a1d96,#6f42c1);
+                color:white; padding:1rem 1.4rem;
+                display:flex; justify-content:space-between; align-items:center;">
+      <span style="font-weight:700;font-size:1rem;">📋 Activer par liste de noms</span>
+      <button onclick="document.getElementById('modalListe').style.display='none';"
+              style="background:rgba(255,255,255,.15);border:none;color:white;
+                     border-radius:6px;padding:.3rem .75rem;cursor:pointer;
+                     font-size:.95rem;font-weight:700;">✕</button>
+    </div>
+
+    <!-- Corps -->
+    <form method="POST"
+          action="{{ url_for('decanat_bulletins_activer_par_liste', sid=bs.id) }}"
+          enctype="multipart/form-data"
+          style="padding:1.4rem;">
+
+      <p style="margin:0 0 1rem;font-size:.88rem;color:#555;line-height:1.5;">
+        Collez des noms (un par ligne) <strong>ou</strong> uploadez directement un <strong>PDF de liste</strong>
+        (recours, liste d'émargement…). Le système trouve les bulletins correspondants
+        et active leur paiement.
+      </p>
+
+      <!-- Date -->
+      <label style="font-size:.85rem;font-weight:700;color:#4a1d96;display:block;margin-bottom:.8rem;">
+        📅 Date de paiement
+        <input type="date" name="date_paiement" id="listeDatePaiement"
+               style="margin-left:.6rem;padding:.3rem .6rem;border:1.5px solid #c4b5fd;
+                      border-radius:6px;font-size:.88rem;color:#4a1d96;font-weight:600;">
+      </label>
+
+      <!-- Option A : noms collés -->
+      <label style="font-size:.85rem;font-weight:700;color:#444;display:block;margin-bottom:.4rem;">
+        Option A — Coller les noms (un par ligne)
+      </label>
+      <textarea name="noms_liste" rows="7"
+                placeholder="KATOKA WA NGOY MESCHACK&#10;KATENDE MESCHACK&#10;KABANGE NGOMAKA John&#10;..."
+                style="width:100%;padding:.55rem .75rem;border:1.5px solid #ddd;
+                       border-radius:8px;font-size:.88rem;font-family:monospace;
+                       resize:vertical;box-sizing:border-box;"></textarea>
+
+      <div style="text-align:center;color:#999;font-size:.82rem;margin:.6rem 0;">— ou —</div>
+
+      <!-- Option B : fichier -->
+      <label style="font-size:.85rem;font-weight:700;color:#444;display:block;margin-bottom:.4rem;">
+        Option B — Uploader un fichier (Excel ou PDF)
+      </label>
+      <input type="file" name="fichier_liste" accept=".xlsx,.xls,.pdf"
+             style="display:block;width:100%;padding:.45rem;border:1.5px dashed #c4b5fd;
+                    border-radius:8px;font-size:.88rem;box-sizing:border-box;cursor:pointer;">
+
+      <p style="font-size:.78rem;color:#888;margin:.5rem 0 1.2rem;">
+        <strong>Excel (.xlsx/.xls)</strong> : le système détecte automatiquement la colonne
+        des noms (intitulée « NOM », « ÉTUDIANT », etc.) et active les bulletins correspondants.<br>
+        <strong>PDF</strong> : liste de recours, liste d'émargement ou tout document avec
+        les noms complets.
+      </p>
+
+      <div style="display:flex;gap:.7rem;justify-content:flex-end;">
+        <button type="button"
+                onclick="document.getElementById('modalListe').style.display='none';"
+                style="padding:.45rem 1.1rem;border:1.5px solid #ddd;border-radius:7px;
+                       background:white;cursor:pointer;font-size:.9rem;">Annuler</button>
+        <button type="submit"
+                style="padding:.45rem 1.4rem;background:#6f42c1;color:white;
+                       border:none;border-radius:7px;cursor:pointer;
+                       font-size:.9rem;font-weight:700;">✅ Activer les correspondances</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Département -->
+<div style="background:white;padding:1.2rem 1.5rem;border-radius:10px;margin-bottom:1rem;
+     box-shadow:0 1px 6px rgba(0,0,0,.07);">
+    <strong style="color:#0d2666;">🏛️ Département affiché sur le bulletin</strong>
+    <p style="color:#666;font-size:.85rem;margin:.3rem 0 .8rem;">
+        Apparaît sous la Faculté, à gauche de « BULLETIN DE RÉSULTATS ACADÉMIQUES ».
+    </p>
+    <form method="POST" action="{{ url_for('decanat_bulletins_update_departement', sid=bs.id) }}"
+          style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;">
+        <select name="departement"
+            style="padding:.5rem .8rem;border:1.5px solid #ddd;border-radius:7px;
+                   font-size:.92rem;min-width:340px;">
+            <option value=""{% if not bs.departement %} selected{% endif %}>— Aucun département —</option>
+            {% for dept in [
+                "Département de Sociologie",
+                "Département d'Anthropologie",
+                "Département des Relations Internationales",
+                "Département des Sciences Politiques et Administratives"
+            ] %}
+            <option value="{{ dept }}"{% if bs.departement == dept %} selected{% endif %}>{{ dept }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn-sm btn-blue" style="padding:.45rem 1.1rem;">
+            💾 Enregistrer
+        </button>
+        {% if bs.departement %}
+        <span style="color:#198754;font-size:.85rem;">✔ {{ bs.departement }}</span>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Texte d'introduction personnalisable -->
+<div style="background:white;padding:1.2rem 1.5rem;border-radius:10px;margin-bottom:1.5rem;
+     box-shadow:0 1px 6px rgba(0,0,0,.07);">
+    <strong style="color:#0d2666;">✏️ Texte d'introduction du bulletin</strong>
+    <p style="color:#666;font-size:.85rem;margin:.3rem 0 .8rem;">
+        Ce texte apparaît juste avant le tableau des cours sur chaque bulletin.
+        Laissez vide pour utiliser le texte par défaut.
+    </p>
+    <form method="POST" action="{{ url_for('decanat_bulletins_update_intro', sid=bs.id) }}">
+        <textarea name="texte_intro" rows="3"
+            style="width:100%;padding:.6rem .8rem;border:1.5px solid #ddd;border-radius:7px;
+                   font-size:.92rem;resize:vertical;font-family:inherit;"
+            placeholder="A obtenu à l'issue des évaluations de la {{ bs.session_acad }} de l'année académique {{ bs.annee }}, semestre {{ bs.semestre }}, les notes ci-dessous :">{{ bs.texte_intro or '' }}</textarea>
+        <div style="margin-top:.6rem;display:flex;gap:.8rem;align-items:center;">
+            <button type="submit" class="btn-sm btn-blue" style="padding:.4rem 1.1rem;">
+                💾 Enregistrer
+            </button>
+            <span style="color:#888;font-size:.82rem;">
+                Ce texte sera appliqué à tous les bulletins de cette session dès la prochaine génération PDF.
+            </span>
+        </div>
+    </form>
+</div>
+
+<div class="panel">
+    <div class="panel-hdr">
+        <h3>Liste des étudiants</h3>
+        <input type="text" id="searchInput" class="search-bar"
+               placeholder="🔍 Rechercher par nom ou matricule…"
+               onkeyup="filterTable()">
+    </div>
+    <table class="table-bul" id="mainTable">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Matricule</th>
+                <th>Nom complet</th>
+                <th>Sexe</th>
+                <th>Décision</th>
+                <th>Statut</th>
+                <th>Réf. paiement</th>
+                <th>Date paiement</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bd in bulletins %}
+            {% set etu = bd.data_json | fromjson %}
+            <tr>
+                <td style="color:#888;">{{ loop.index }}</td>
+                <td><strong>{{ bd.matricule }}</strong></td>
+                <td>{{ bd.nom }}</td>
+                <td>{{ bd.sexe }}</td>
+                <td>
+                    {% set dec = etu.get('decision','') | upper %}
+                    {% if dec in ('ADM','COMP') %}
+                        <span style="color:#198754;font-weight:700;">{{ dec }}</span>
+                    {% elif dec %}
+                        <span style="color:#dc3545;font-weight:700;">{{ dec }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if bd.paye %}
+                        <span class="badge-paid">✅ Payé</span>
+                        {% if etu.get('manuel_paiement') %}
+                        <span style="display:inline-block;background:#fff3cd;color:#7a5000;
+                                     border:1px solid #e0b800;border-radius:12px;padding:.12rem .45rem;
+                                     font-size:.7rem;font-weight:700;margin-top:.25rem;">
+                            Ajout manuel par l’administration
+                        </span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge-unpaid">⏳ En attente</span>
+                    {% endif %}
+                </td>
+                <td style="font-size:.82rem;color:#666;">{{ bd.reference_paiement or '–' }}</td>
+                <td style="font-size:.82rem;color:#666;">
+                    {{ bd.date_paiement.strftime('%d/%m/%Y') if bd.date_paiement else '–' }}
+                </td>
+                <td style="white-space:nowrap;">
+                    <button onclick="ouvrirApercu({{ bd.id }})"
+                            class="btn-sm" style="background:#0d2666;color:white;">
+                        👁 Aperçu
+                    </button>
+                    <a href="{{ url_for('decanat_bulletins_pdf_admin', bid=bd.id) }}"
+                       class="btn-sm btn-blue" style="margin-left:.3rem;">⬇ PDF</a>
+                    {% if not bd.paye %}
+                    <form method="POST"
+                          action="{{ url_for('decanat_bulletins_activer_paiement', bid=bd.id) }}"
+                          style="display:inline;"
+                          class="form-activer"
+                          onsubmit="return confirm('Activer le paiement pour {{ bd.nom | replace("'", "\\'") }} ?');">
+                        <input type="hidden" name="date_paiement" class="hidden-date-activer">
+                        <button type="submit" class="btn-sm"
+                                style="background:#198754;color:white;margin-left:.3rem;">
+                            ✅ Activer
+                        </button>
+                    </form>
+                    {% else %}
+                    <button onclick="ouvrirPaiement({{ bd.id }}, '{{ bd.nom | replace("'", "\\'") }}', {{ bd.montant_paye or 0 }}, '{{ bd.methode_paiement or '' }}', '{{ bd.reference_paiement or '' }}', '{{ bd.date_paiement.strftime('%Y-%m-%d') if bd.date_paiement else '' }}')"
+                            class="btn-sm" style="background:#fd7e14;color:white;margin-left:.3rem;">
+                        ✏️ Modifier
+                    </button>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ══ PANEL AUDIT PAIEMENTS ══ -->
+{% if audits %}
+<div class="panel" style="margin-top:1.5rem;">
+    <div class="panel-hdr">
+        <h3 style="cursor:pointer;" onclick="toggleAudit()">🕵️ Historique des corrections de paiement
+            <span id="auditCount" style="background:#0d2666;color:white;border-radius:20px;
+                  padding:.1rem .55rem;font-size:.78rem;margin-left:.5rem;">{{ audits|length }}</span>
+            <span id="auditToggleIcon" style="color:#0d2666;font-size:1.1rem;margin-left:.4rem;">▼</span>
+        </h3>
+        <a href="{{ url_for('decanat_bulletins_audits_csv', sid=bs.id) }}"
+           class="btn-sm btn-green" style="white-space:nowrap;">⬇ Exporter CSV</a>
+    </div>
+    <div id="auditPanel">
+        <table class="table-bul" style="font-size:.83rem;">
+            <thead>
+                <tr>
+                    <th>Date correction</th>
+                    <th>Opérateur</th>
+                    <th>Étudiant</th>
+                    <th>Montant avant</th>
+                    <th>Montant après</th>
+                    <th>Méthode avant</th>
+                    <th>Méthode après</th>
+                    <th>Référence avant</th>
+                    <th>Référence après</th>
+                    <th>Date paiement avant</th>
+                    <th>Date paiement après</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for a in audits %}
+            <tr>
+                <td style="white-space:nowrap;color:#555;">
+                    {{ a.date_modification.strftime('%d/%m/%Y %H:%M') }}
+                </td>
+                <td style="white-space:nowrap;">
+                    <span style="background:#e8f0fe;color:#0d2666;padding:.15rem .5rem;
+                                 border-radius:12px;font-size:.8rem;font-weight:600;">
+                        👤 {{ a.operator_name or '—' }}
+                    </span>
+                </td>
+                <td><strong>{{ nom_par_id.get(a.bulletin_id, '—') }}</strong></td>
+                <td>
+                    {% if a.old_montant != a.new_montant %}
+                        <span style="color:#dc3545;">{{ '{:,}'.format(a.old_montant or 0) }} FC</span>
+                    {% else %}
+                        <span style="color:#888;">{{ '{:,}'.format(a.old_montant or 0) }} FC</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if a.old_montant != a.new_montant %}
+                        <span style="color:#198754;font-weight:700;">{{ '{:,}'.format(a.new_montant or 0) }} FC</span>
+                    {% else %}
+                        <span style="color:#888;">{{ '{:,}'.format(a.new_montant or 0) }} FC</span>
+                    {% endif %}
+                </td>
+                <td style="color:{% if a.old_methode != a.new_methode %}#dc3545{% else %}#888{% endif %};">
+                    {{ a.old_methode or '—' }}
+                </td>
+                <td style="color:{% if a.old_methode != a.new_methode %}#198754;font-weight:700{% else %}#888{% endif %};">
+                    {{ a.new_methode or '—' }}
+                </td>
+                <td style="color:{% if a.old_reference != a.new_reference %}#dc3545{% else %}#888{% endif %};">
+                    {{ a.old_reference or '—' }}
+                </td>
+                <td style="color:{% if a.old_reference != a.new_reference %}#198754;font-weight:700{% else %}#888{% endif %};">
+                    {{ a.new_reference or '—' }}
+                </td>
+                <td style="color:{% if a.old_date_paiement != a.new_date_paiement %}#dc3545{% else %}#888{% endif %};">
+                    {{ a.old_date_paiement.strftime('%d/%m/%Y') if a.old_date_paiement else '—' }}
+                </td>
+                <td style="color:{% if a.old_date_paiement != a.new_date_paiement %}#198754;font-weight:700{% else %}#888{% endif %};">
+                    {{ a.new_date_paiement.strftime('%d/%m/%Y') if a.new_date_paiement else '—' }}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- ══ MODAL MODIFIER PAIEMENT ══ -->
+<div id="paiementModal" style="
+    display:none; position:fixed; inset:0; z-index:10000;
+    background:rgba(0,0,0,.6); backdrop-filter:blur(3px);
+    align-items:center; justify-content:center;">
+
+    <div style="background:white; border-radius:14px; width:min(96vw,480px);
+                box-shadow:0 8px 40px rgba(0,0,0,.25); overflow:hidden;">
+        <!-- En-tête -->
+        <div style="background:linear-gradient(135deg,#0d2666,#1a4db8);
+                    color:white; padding:1rem 1.4rem;
+                    display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700; font-size:1rem;">✏️ Modifier le paiement</span>
+            <button onclick="fermerPaiement()"
+                    style="background:rgba(255,255,255,.15); border:none; color:white;
+                           border-radius:6px; padding:.3rem .75rem; cursor:pointer;
+                           font-size:.95rem; font-weight:700;">✕</button>
+        </div>
+
+        <!-- Corps -->
+        <form id="paiementForm" method="POST" style="padding:1.4rem;">
+            <p id="paiementNom" style="margin:0 0 1rem; font-weight:600; color:#0d2666;
+                                        font-size:.95rem;"></p>
+
+            <div style="display:grid; gap:.9rem;">
+                <label style="font-size:.88rem; font-weight:600; color:#444;">
+                    Montant payé (FC)
+                    <input type="number" name="montant_paye" id="pm_montant"
+                           min="0" step="500"
+                           style="margin-top:.3rem; display:block; width:100%;
+                                  padding:.45rem .7rem; border:1.5px solid #ddd;
+                                  border-radius:7px; font-size:.93rem; box-sizing:border-box;">
+                </label>
+
+                <label style="font-size:.88rem; font-weight:600; color:#444;">
+                    Méthode de paiement
+                    <select name="methode_paiement" id="pm_methode"
+                            style="margin-top:.3rem; display:block; width:100%;
+                                   padding:.45rem .7rem; border:1.5px solid #ddd;
+                                   border-radius:7px; font-size:.93rem; box-sizing:border-box;">
+                        <option value="">— Sélectionner —</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Reçu papier">Reçu papier</option>
+                        <option value="Espèces">Espèces</option>
+                    </select>
+                </label>
+
+                <label style="font-size:.88rem; font-weight:600; color:#444;">
+                    Référence / N° reçu
+                    <input type="text" name="reference_paiement" id="pm_ref"
+                           placeholder="ex: MP-001234"
+                           style="margin-top:.3rem; display:block; width:100%;
+                                  padding:.45rem .7rem; border:1.5px solid #ddd;
+                                  border-radius:7px; font-size:.93rem; box-sizing:border-box;">
+                </label>
+
+                <label style="font-size:.88rem; font-weight:600; color:#444;">
+                    Date de paiement
+                    <input type="date" name="date_paiement" id="pm_date"
+                           style="margin-top:.3rem; display:block; width:100%;
+                                  padding:.45rem .7rem; border:1.5px solid #ddd;
+                                  border-radius:7px; font-size:.93rem; box-sizing:border-box;">
+                </label>
+            </div>
+
+            <div style="margin-top:1.3rem; display:flex; gap:.7rem; justify-content:flex-end;">
+                <button type="button" onclick="fermerPaiement()"
+                        style="padding:.45rem 1.1rem; border:1.5px solid #ddd;
+                               border-radius:7px; background:white; cursor:pointer;
+                               font-size:.9rem;">Annuler</button>
+                <button type="submit"
+                        style="padding:.45rem 1.3rem; background:#0d2666; color:white;
+                               border:none; border-radius:7px; cursor:pointer;
+                               font-size:.9rem; font-weight:700;">💾 Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══ MODAL APERÇU PDF (admin) ══ -->
+<div id="apercuModal" style="
+    display:none; position:fixed; inset:0; z-index:9999;
+    background:rgba(0,0,0,.75); backdrop-filter:blur(4px);
+    flex-direction:column; align-items:center; justify-content:center;">
+
+    <div style="
+        width:min(94vw,960px); background:#0d2666; color:white;
+        padding:.65rem 1.2rem; border-radius:12px 12px 0 0;
+        display:flex; align-items:center; justify-content:space-between; gap:1rem;">
+        <span id="apercuLabel" style="font-weight:700;font-size:.95rem;">👁 Prévisualisation du bulletin</span>
+        <div style="display:flex;gap:.6rem;align-items:center;">
+            <a id="apercuDlLink" href="#"
+               style="background:#1a4db8;color:white;padding:.35rem .9rem;border-radius:6px;
+                      font-size:.83rem;font-weight:700;text-decoration:none;">
+                ⬇ Télécharger
+            </a>
+            <button onclick="fermerApercu()"
+                    style="background:rgba(255,255,255,.15);color:white;border:none;
+                           border-radius:6px;padding:.35rem .8rem;font-size:.9rem;
+                           cursor:pointer;font-weight:700;">✕ Fermer</button>
+        </div>
+    </div>
+
+    <iframe id="apercuIframe" src="" style="
+        width:min(94vw,960px); height:82vh;
+        border:none; border-radius:0 0 12px 12px; background:white;">
+    </iframe>
+</div>
+
+<script>
+function toggleOperatorForm() {
+    const form  = document.getElementById('operatorForm');
+    const badge = document.getElementById('operatorBadge');
+    const input = document.getElementById('operatorInput');
+    const isHidden = form.style.display === 'none';
+    form.style.display  = isHidden ? 'block' : 'none';
+    badge.style.display = isHidden ? 'none'  : 'flex';
+    if (isHidden) { input.focus(); input.select(); }
+}
+function validateOperator(form) {
+    const val = form.operator_name.value.trim();
+    if (!val) { form.operator_name.focus(); return false; }
+    return true;
+}
+
+function ouvrirApercu(bid) {
+    const modal  = document.getElementById('apercuModal');
+    const iframe = document.getElementById('apercuIframe');
+    const dlLink = document.getElementById('apercuDlLink');
+    iframe.src  = '/decanat/bulletins/bulletin/' + bid + '/apercu';
+    dlLink.href = '/decanat/bulletins/bulletin/' + bid + '/pdf';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function fermerApercu() {
+    document.getElementById('apercuIframe').src = '';
+    document.getElementById('apercuModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.getElementById('apercuModal').addEventListener('click', function(e) {
+    if (e.target === this) fermerApercu();
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fermerApercu();
+});
+
+function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('#mainTable tbody tr').forEach(tr => {
+        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+function toggleAudit() {
+    const panel = document.getElementById('auditPanel');
+    const icon  = document.getElementById('auditToggleIcon');
+    if (!panel) return;
+    if (panel.style.display === 'none') {
+        panel.style.display = '';
+        icon.textContent = '▼';
+    } else {
+        panel.style.display = 'none';
+        icon.textContent = '▶';
+    }
+}
+
+// ── Date commune pour les activations manuelles ──
+(function() {
+    // Initialiser le datepicker à aujourd'hui en heure de Lubumbashi (UTC+2)
+    const now = new Date(Date.now() + 2 * 3600 * 1000);
+    const today = now.toISOString().slice(0, 10);
+    const dp = document.getElementById('dateActivation');
+    if (dp) { dp.value = today; syncDateActivation(today); }
+})();
+
+function syncDateActivation(val) {
+    document.querySelectorAll('.hidden-date-activer').forEach(function(inp) {
+        inp.value = val;
+    });
+    // Synchroniser aussi la date du modal "Par liste"
+    const dl = document.getElementById('listeDatePaiement');
+    if (dl) dl.value = val;
+}
+
+// Synchroniser la date du modal quand on l'ouvre
+document.getElementById('modalListe').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+document.querySelector('[onclick*="modalListe"]') && (function() {
+    // injecter la date courante dans le champ du modal à l'ouverture
+    const btn = document.querySelector('button[onclick*="modalListe"]');
+    if (btn) {
+        const orig = btn.getAttribute('onclick');
+        btn.setAttribute('onclick', orig + ' document.getElementById("listeDatePaiement").value=document.getElementById("dateActivation").value;');
+    }
+})();
+
+function ouvrirPaiement(bid, nom, montant, methode, ref, date) {
+    const modal = document.getElementById('paiementModal');
+    document.getElementById('paiementNom').textContent = '👤 ' + nom;
+    document.getElementById('pm_montant').value = montant || '';
+    document.getElementById('pm_methode').value = methode || '';
+    document.getElementById('pm_ref').value = ref || '';
+    document.getElementById('pm_date').value = date || '';
+    document.getElementById('paiementForm').action = '/decanat/bulletins/bulletin/' + bid + '/paiement';
+    modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function fermerPaiement() {
+    document.getElementById('paiementModal').style.display = 'none';
+    document.body.style.overflow = '';
+}
+document.getElementById('paiementModal').addEventListener('click', function(e) {
+    if (e.target === this) fermerPaiement();
+});
+</script>
+{% endblock %}

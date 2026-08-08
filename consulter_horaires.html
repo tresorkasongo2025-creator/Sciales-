@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Horaires de cours{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📅 Horaires de cours</h2>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">← Retour à l'accueil</a>
+</div>
+
+<div class="filters-section">
+    <form method="GET" class="filters-form">
+        <div class="form-group">
+            <label for="departement">Département</label>
+            <select id="departement" name="departement" onchange="this.form.submit()">
+                <option value="">Tous les départements</option>
+                {% for dept in departements %}
+                <option value="{{ dept }}" {% if selected_dept == dept %}selected{% endif %}>
+                    {{ dept }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="promotion">Promotion</label>
+            <select id="promotion" name="promotion" onchange="this.form.submit()">
+                <option value="">Toutes les promotions</option>
+                {% for promo in promotions %}
+                <option value="{{ promo }}" {% if selected_promo == promo %}selected{% endif %}>
+                    {{ promo }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <a href="{{ url_for('consulter_horaires') }}" class="btn btn-secondary">Réinitialiser</a>
+        </div>
+    </form>
+</div>
+
+<div style="padding: 2rem;">
+    {% if horaires %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem;">
+            {% for horaire in horaires %}
+            <div style="border: 2px solid #6c5ce7; border-radius: 10px; padding: 1.5rem; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+                <h3 style="margin-top: 0; color: #6c5ce7;">
+                    {{ horaire.departement }} - {{ horaire.promotion }}
+                </h3>
+                <p style="font-weight: bold; color: #2c3e50;">
+                    {% if horaire.type_horaire == 'normal' %}
+                    📋 Horaire normal
+                    {% else %}
+                    📝 Horaire de complément
+                    {% endif %}
+                </p>
+                <p style="color: #666; font-size: 0.9rem;">
+                    Publié le {{ horaire.date_publication.strftime('%d/%m/%Y') }}
+                </p>
+                <a href="{{ url_for('fichier_persistant', category='horaires', filename=horaire.fichier) }}" target="_blank" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    📄 Consulter l'horaire
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p style="text-align: center; color: #666; font-size: 1.1rem;">
+                Aucun horaire disponible pour le moment.
+                {% if selected_dept or selected_promo %}
+                <br>Essayez de modifier les filtres.
+                {% endif %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

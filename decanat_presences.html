@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Listes de présence - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📊 Listes de présence</h2>
+    {% if session.get('decanat_logged_in') %}
+        <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+    {% else %}
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">← Accueil</a>
+    {% endif %}
+</div>
+
+<div class="filters-section">
+    <form method="GET" class="filters-form">
+        <div class="form-group">
+            <label for="cours_id">Cours</label>
+            <select id="cours_id" name="cours_id" onchange="this.form.submit()">
+                <option value="">Tous les cours</option>
+                {% for cours in cours_list %}
+                <option value="{{ cours.id }}" {% if selected_cours == cours.id %}selected{% endif %}>
+                    {{ cours.nom }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" value="{{ request.args.get('date', '') }}">
+        </div>
+
+        <div class="form-group">
+            <button type="submit" class="btn btn-primary">Filtrer</button>
+            <a href="{{ url_for('decanat_presences') }}" class="btn btn-secondary">Réinitialiser</a>
+        </div>
+    </form>
+</div>
+
+{% if selected_cours %}
+<div class="export-section" style="background: #2c2c2c; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #444;">
+    <h3 style="color: #4CAF50; margin-top: 0;">📥 Exporter les listes de présence</h3>
+    <p style="color: #ccc; margin-bottom: 15px;">Téléchargez les présences de toutes les séances du cours sélectionné</p>
+    
+    <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+        <div style="flex: 1; min-width: 200px;">
+            <label for="plage_export" style="color: #fff; display: block; margin-bottom: 5px;">Période</label>
+            <select id="plage_export" onchange="toggleOptionsPersonnalisees()" style="padding: 10px; border-radius: 5px; border: 2px solid #555; background: #1a1a1a; color: #fff; width: 100%;">
+                <option value="2jours">2 derniers jours</option>
+                <option value="semaine">Dernière semaine</option>
+                <option value="mois">Dernier mois</option>
+                <option value="jours_personnalise">📅 Nombre de jours</option>
+                <option value="dates_personnalisees">🗓️ Plage de dates</option>
+            </select>
+        </div>
+        
+        <div id="jours_personnalises_container" style="flex: 1; min-width: 200px; display: none;">
+            <label for="jours_personnalises" style="color: #fff; display: block; margin-bottom: 5px;">Nombre de jours</label>
+            <input type="number" id="jours_personnalises" min="1" max="365" value="7" style="padding: 10px; border-radius: 5px; border: 2px solid #555; background: #1a1a1a; color: #fff; width: 100%;" placeholder="Ex: 15">
+        </div>
+        
+        <div id="dates_personnalisees_container" style="display: none; flex: 2; min-width: 300px; gap: 10px;">
+            <div style="flex: 1;">
+                <label for="date_debut" style="color: #fff; display: block; margin-bottom: 5px;">Date de début</label>
+                <input type="date" id="date_debut" style="padding: 10px; border-radius: 5px; border: 2px solid #555; background: #1a1a1a; color: #fff; width: 100%;">
+            </div>
+            <div style="flex: 1;">
+                <label for="date_fin" style="color: #fff; display: block; margin-bottom: 5px;">Date de fin</label>
+                <input type="date" id="date_fin" style="padding: 10px; border-radius: 5px; border: 2px solid #555; background: #1a1a1a; color: #fff; width: 100%;">
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <a href="#" onclick="exportPresences('excel'); return false;" class="btn" style="background: #28a745; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                📊 Excel
+            </a>
+            <a href="#" onclick="exportPresences('pdf'); return false;" class="btn" style="background: #dc3545; color: white; padding: 10px 20px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                📄 PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleOptionsPersonnalisees() {
+    const plage = document.getElementById('plage_export').value;
+    const joursContainer = document.getElementById('jours_personnalises_container');
+    const datesContainer = document.getElementById('dates_personnalisees_container');
+    
+    joursContainer.style.display = 'none';
+    datesContainer.style.display = 'none';
+    
+    if (plage === 'jours_personnalise') {
+        joursContainer.style.display = 'block';
+    } else if (plage === 'dates_personnalisees') {
+        datesContainer.style.display = 'flex';
+    }
+}
+
+function exportPresences(format) {
+    const coursId = {{ selected_cours }};
+    const plage = document.getElementById('plage_export').value;
+    let url = `/export/presences/${format}?cours_id=${coursId}&plage=${plage}`;
+    
+    if (plage === 'jours_personnalise') {
+        const jours = document.getElementById('jours_personnalises').value;
+        if (!jours || jours < 1) {
+            alert('Veuillez entrer un nombre de jours valide (minimum 1)');
+            return;
+        }
+        url += `&jours=${jours}`;
+    } else if (plage === 'dates_personnalisees') {
+        const dateDebut = document.getElementById('date_debut').value;
+        const dateFin = document.getElementById('date_fin').value;
+        
+        if (!dateDebut || !dateFin) {
+            alert('Veuillez sélectionner les deux dates (début et fin)');
+            return;
+        }
+        
+        if (dateDebut > dateFin) {
+            alert('La date de début doit être antérieure ou égale à la date de fin');
+            return;
+        }
+        
+        url += `&date_debut=${dateDebut}&date_fin=${dateFin}`;
+    }
+    
+    window.location.href = url;
+}
+</script>
+{% else %}
+<div style="background: #2c2c2c; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #FFC107;">
+    <p style="color: #FFC107; margin: 0;">ℹ️ Veuillez sélectionner un cours pour exporter les listes de présence</p>
+</div>
+{% endif %}
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Heure</th>
+                <th>Type</th>
+                <th>Nom complet</th>
+                <th>CODE-ID FAC</th>
+                <th>Cours</th>
+                <th>Département</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if presences %}
+                {% for presence in presences %}
+                <tr>
+                    <td>{{ presence.date.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ presence.heure_entree.strftime('%H:%M:%S') }}</td>
+                    <td>
+                        {% if presence.type_presence == 'etudiant' %}
+                        <span class="badge badge-student">👨‍🎓 Étudiant</span>
+                        {% else %}
+                        <span class="badge badge-teacher">👨‍🏫 Professeur</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if presence.etudiant %}
+                        {{ presence.etudiant.nom }} {{ presence.etudiant.postnom }} {{ presence.etudiant.prenom }}
+                        {% elif presence.professeur %}
+                        {{ presence.professeur.nom }} {{ presence.professeur.postnom }} {{ presence.professeur.prenom }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if presence.etudiant %}
+                        {{ presence.etudiant.matricule }}
+                        {% elif presence.professeur %}
+                        {{ presence.professeur.matricule }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if presence.cours %}
+                        {{ presence.cours.nom }}
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if presence.etudiant %}
+                        {{ presence.etudiant.departement }}
+                        {% elif presence.professeur %}
+                        {{ presence.professeur.departement or '-' }}
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        Aucune présence enregistrée
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="table-footer">
+    <p><strong>Total:</strong> {{ presences|length }} présence(s)</p>
+</div>
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Communiqués de la faculté{% endblock %}
+
+{% block extra_css %}
+<style>
+    .communiques-page { max-width: 960px; margin: 0 auto; }
+    .communiques-hero {
+        background: linear-gradient(135deg,#0d2666,#2563eb);
+        color:#fff; border-radius:16px; padding:2rem 1.25rem;
+        text-align:center; margin-bottom:1.5rem;
+    }
+    .communiques-hero h2 { margin:0 0 .4rem; }
+    .communique-card {
+        background:#fff; border-radius:14px; padding:1.25rem;
+        margin-bottom:1rem; box-shadow:0 3px 14px rgba(0,0,0,.1);
+        border-left:5px solid #bfa01a;
+    }
+    .communique-card h3 { color:#0d2666; margin:0 0 .35rem; }
+    .communique-date { color:#777; font-size:.85rem; margin:.25rem 0 1rem; }
+    .communique-description { white-space:pre-wrap; line-height:1.7; }
+    .communique-image { max-width:100%; max-height:520px; object-fit:contain; border-radius:10px; margin-top:1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="communiques-page">
+    <div class="communiques-hero">
+        <h2>📣 Communiqués de la faculté</h2>
+        <p>Retrouvez ici les communications officielles publiées par la faculté.</p>
+    </div>
+
+    {% if publications %}
+        {% for publication in publications %}
+        <article class="communique-card">
+            <h3>{% if publication.epingle %}📌 {% endif %}{{ publication.titre }}</h3>
+            <p class="communique-date">📅 Publié le {{ publication.date_publication.strftime('%d/%m/%Y à %H:%M') }}</p>
+            <div class="communique-description">{{ publication.description }}</div>
+            {% if publication.image %}
+            <img class="communique-image"
+                 src="{{ url_for('fichier_persistant', category='actualites', filename=publication.image) }}"
+                 alt="{{ publication.titre }}">
+            {% endif %}
+        </article>
+        {% endfor %}
+    {% else %}
+        <div class="card" style="text-align:center;">Aucun communiqué publié pour le moment.</div>
+    {% endif %}
+</div>
+{% endblock %}

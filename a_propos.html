@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}À propos - E-SCIALES UNILU +{% endblock %}
+
+{% block content %}
+<div class="about-page">
+    <div class="about-header">
+        <h1>À PROPOS DE LA FACULTÉ</h1>
+        <p class="about-subtitle">Faculté des Sciences Sociales, Politiques et Administratives</p>
+    </div>
+
+    <div class="faculte-image">
+        <img src="{{ url_for('fichier_persistant', category='root', filename=image_facade) }}" alt="Façade de la Faculté des Sciences Sociales - UNILU">
+        <p class="image-caption">Faculté des Sciences Sociales, Politiques et Administratives - Université de Lubumbashi</p>
+    </div>
+
+    <section class="about-section">
+        <h2>I. Mission de la Faculté</h2>
+        
+        <p class="welcome-text">
+            {{ content_data.get('mission_texte', 'La prestigieuse Faculté des Sciences Sociales, Politiques et Administratives de l\'Université de Lubumbashi vous souhaite une cordiale bienvenue. Elle a été créée lors de la réforme de 1971-1972. Sa mission est de former des cadres de conception et d\'exécution dans différents domaines de la vie nationale et internationale: Administration, Management, Diplomatie, Sociologie, Anthropologie, Science politique, Sciences du travail, Droit international, Économie internationale, Politique internationale, Gestion des conflits... à travers l\'enseignement, la recherche et le service à la société.') }}
+        </p>
+
+        <p>
+            {{ content_data.get('lmd_texte', 'Depuis l\'année académique 2021-2022, les enseignements et la recherche au sein de la faculté sont organisés conformément aux normes du Système LMD (Licence-Maîtrise-Doctorat). Quatre départements sont constitués: Département d\'Anthropologie, Département de Sociologie et Sciences du travail, Département des Relations Internationales (R.I.) et Département des Sciences Politiques et Administratives (S.P.A.). Dans chaque département, le premier cycle s\'étale sur trois années d\'études (Licence 1, Licence 2 et Licence 3) et conduit au diplôme de Licence ou Bachelor.') }}
+        </p>
+
+        <p>
+            {{ content_data.get('cycle2_texte', 'Le deuxième cycle dure deux années d\'études (Maîtrise 1 et Maîtrise 2) et donne accès au diplôme de Maîtrise ou Master.') }}
+        </p>
+
+        <p>
+            {{ content_data.get('cycle3_texte', 'Le troisième cycle constitue une étape nettement distincte de l\'enseignement du deuxième cycle par sa finalité de former des spécialistes. Le candidat y acquiert une connaissance approfondie dans un groupe de matières constituant sa spécialité, ainsi qu\'un niveau élevé de maîtrise épistémologique et méthodologique de sa discipline. Le candidat suit d\'abord le programme arrêté pour l\'obtention du Diplôme d\'Études Approfondies (D.E.A.). C\'est un programme de deux ans comprenant des cours et séminaires, ainsi que la présentation d\'une dissertation écrite. La réussite à ce programme habilite le détenteur à poursuivre la préparation d\'une Thèse de Doctorat.') }}
+        </p>
+
+        <p class="mission-conclusion">
+            {{ content_data.get('conclusion_texte', 'Pour jouer son rôle dans la société, l\'étudiant à former doit être un bon citoyen ayant des valeurs civiques et morales. Le Logo de la Faculté représente-t-il la génération sociale, source des interactions au sein de la société nationale et internationale.') }}
+        </p>
+    </section>
+
+    <section class="about-section">
+        <h2>II. Structure de la Faculté</h2>
+
+        <div class="structure-block">
+            <h3>Décanat</h3>
+            <ul class="structure-list">
+                <li><strong>Le Doyen de la Faculté :</strong> {{ content_data.get('doyenne', 'P.O. KAYIBA BUKASA Gertrude') }}</li>
+                <li><strong>Le Vice-Doyen chargé de l'Enseignement :</strong> {{ content_data.get('vice_doyen_enseignement', 'Pr KAKEZ KAYEMBE Dieudonné') }}</li>
+                <li><strong>Le Vice-Doyen chargé de la Recherche :</strong> {{ content_data.get('vice_doyen_recherche', 'P.O. ESAMBU MATENDA Jean-Bosco') }}</li>
+                <li><strong>Le Vice-Doyen chargé du Tutorat :</strong> {{ content_data.get('vice_doyen_tutorat', 'Pr TSHIMPANGA MATALA Alidor') }}</li>
+                <li><strong>Le Secrétaire Académique de la Faculté :</strong> {{ content_data.get('secretaire_academique', 'C.T. NGUZA KARL-BOND Jean-Pierre') }}</li>
+                <li><strong>Le Secrétaire Administratif et Financier :</strong> {{ content_data.get('secretaire_administratif', 'Mme NGOIE NGOMBE Annie') }}</li>
+                <li><strong>L'Appariteur de la Faculté :</strong> {{ content_data.get('appariteur', 'M. MUTERA LWAMBA Ozias') }}</li>
+                <li><strong>La Comptable de la Faculté :</strong> {{ content_data.get('comptable', 'Mme MUKOSHA KALUNGA Florence') }}</li>
+                <li><strong>L'Intendant de la Faculté :</strong> {{ content_data.get('intendant', 'Mme STAMILI BEMI BABA Espérance') }}</li>
+            </ul>
+        </div>
+
+        <div class="structure-block">
+            <h3>Départements</h3>
+            
+            <div class="departement-item">
+                <h4>Département d'Anthropologie</h4>
+                <p><strong>Le Chef de Département :</strong> {{ content_data.get('chef_anthropologie', 'Pr KATSHUNGA KASONGO Théophile') }}</p>
+            </div>
+
+            <div class="departement-item">
+                <h4>Département de Sociologie et Sciences du travail</h4>
+                <p><strong>Le Chef de Département :</strong> {{ content_data.get('chef_sociologie', 'Pr TSHIKA MU\'SANGU Sidoine') }}</p>
+            </div>
+
+            <div class="departement-item">
+                <h4>Département des Relations Internationales</h4>
+                <p><strong>Le Chef de Département :</strong> {{ content_data.get('chef_relations_int', 'Pr LWAMBA MU\'GANZA Justin') }}</p>
+            </div>
+
+            <div class="departement-item">
+                <h4>Département des Sciences Politiques et Administratives</h4>
+                <p><strong>Le Chef de Département :</strong> {{ content_data.get('chef_spa', 'Pr MWENZE MINZA Martin') }}</p>
+            </div>
+        </div>
+
+        <div class="structure-block">
+            <h3>Centres de Recherche</h3>
+            
+            <div class="centre-item">
+                <h4>Le Centre d'Études Politiques en Afrique Centrale (C.E.P.A.C.)</h4>
+                <p><strong>Le Directeur :</strong> {{ content_data.get('directeur_cespac', 'Pr KALEMBWE LONGWE Jean-Pierre') }}</p>
+            </div>
+
+            <div class="centre-item">
+                <h4>Le Centre d'Études Électorales (C.E.E.)</h4>
+                <p><strong>Le Directeur :</strong> {{ content_data.get('directeur_cee', 'Pr MWEMBU DIBWE') }}</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section contact-section">
+        <h2>Contacts</h2>
+        
+        <div class="contact-info">
+            <p><strong>Adresse :</strong> {{ content_data.get('adresse', 'Route Kasapa, Cités universitaires, Cité Avenue de la Renaissance Africaine (Campus)') }}</p>
+            
+            <div class="phone-numbers">
+                <p><strong>Téléphones :</strong></p>
+                <p>📞 {{ content_data.get('telephone1', '+243 99 551 74 86') }}</p>
+                <p>📞 {{ content_data.get('telephone2', '+243 99 293 94 94') }}</p>
+            </div>
+
+            <div class="social-media">
+                <p><strong>Réseaux sociaux :</strong></p>
+                <p>💬 WhatsApp : Faculté des sciences sociales UNILU</p>
+                <p>📘 Facebook : Faculté des sciences sociales UNILU</p>
+            </div>
+
+            <p class="salle-info"><strong>Salle informatique de l'UNILU</strong></p>
+        </div>
+    </section>
+
+    <div class="about-footer">
+        <p class="motto">{{ content_data.get('motto', '« Ici naissent les idées, se révèlent les talents et se forment les femmes et les hommes qui pensent l\'humain et la société, gouvernent avec intelligence et transforment les organisations, les nations et le monde. »') }}</p>
+    </div>
+</div>
+
+<style>
+.about-page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+.about-header {
+    text-align: center;
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+    color: white;
+}
+
+.about-header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.about-subtitle {
+    font-size: 1.2rem;
+    font-weight: 300;
+}
+
+.faculte-image {
+    text-align: center;
+    margin-bottom: 3rem;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.faculte-image img {
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    margin-bottom: 1rem;
+}
+
+.image-caption {
+    font-size: 1.1rem;
+    color: #667eea;
+    font-weight: 600;
+    font-style: italic;
+    margin: 0;
+}
+
+.about-section {
+    background: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.about-section h2 {
+    color: #667eea;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 3px solid #667eea;
+    padding-bottom: 0.5rem;
+}
+
+.about-section h3 {
+    color: #764ba2;
+    font-size: 1.5rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.about-section h4 {
+    color: #333;
+    font-size: 1.2rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.about-section p {
+    line-height: 1.8;
+    color: #333;
+    margin-bottom: 1rem;
+    text-align: justify;
+}
+
+.welcome-text {
+    font-size: 1.1rem;
+    color: #555;
+    font-weight: 500;
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
+.mission-conclusion {
+    font-style: italic;
+    color: #666;
+    background: #fffbf0;
+    padding: 1rem;
+    border-radius: 5px;
+    border-left: 4px solid #ffa500;
+}
+
+.structure-block {
+    margin-top: 2rem;
+}
+
+.structure-list {
+    list-style: none;
+    padding: 0;
+}
+
+.structure-list li {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 5px;
+    border-left: 3px solid #667eea;
+}
+
+.structure-list li strong {
+    color: #764ba2;
+}
+
+.departement-item, .centre-item {
+    background: #f8f9fa;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+    border-left: 4px solid #764ba2;
+}
+
+.departement-item h4, .centre-item h4 {
+    color: #667eea;
+    margin-top: 0;
+}
+
+.contact-section {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+}
+
+.contact-info {
+    font-size: 1.1rem;
+}
+
+.contact-info p {
+    margin-bottom: 0.75rem;
+}
+
+.phone-numbers, .social-media {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+}
+
+.salle-info {
+    font-size: 1.2rem;
+    color: #667eea;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 8px;
+}
+
+.about-footer {
+    text-align: center;
+    margin-top: 3rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+.motto {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: white;
+    font-style: italic;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .about-header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .about-subtitle {
+        font-size: 1rem;
+    }
+    
+    .about-section {
+        padding: 1.5rem;
+    }
+    
+    .about-section h2 {
+        font-size: 1.5rem;
+    }
+    
+    .motto {
+        font-size: 1.2rem;
+    }
+}
+</style>
+{% endblock %}

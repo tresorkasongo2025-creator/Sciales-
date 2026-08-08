@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}E-SCIALES UNILU +{% endblock %}</title>
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#1a3a6b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="E-SCIALES">
+    <link rel="icon" href="{{ url_for('static', filename='logo-sciences-sociales.png') }}" type="image/png">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='logo-sciences-sociales.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .plus-symbol {
+            display: inline-block;
+            width: 1.2em;
+            height: 1.2em;
+            vertical-align: middle;
+            margin: 0 0.15em;
+        }
+        
+        /* Dropdown Menu */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dropdown-toggle {
+            cursor: pointer;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: all 0.3s;
+            display: block;
+        }
+        
+        .dropdown-toggle:hover {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            min-width: 220px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border-radius: 5px;
+            margin-top: 0.5rem;
+            z-index: 1000;
+            padding: 0.5rem 0;
+        }
+        
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+        
+        .dropdown-menu a {
+            display: block;
+            padding: 0.7rem 1rem;
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: all 0.3s;
+            border-radius: 0;
+        }
+        
+        .dropdown-menu a:hover {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .messenger-contact-bubble {
+            position: fixed;
+            right: 1.1rem;
+            bottom: 1.1rem;
+            z-index: 2000;
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            padding: .72rem 1rem .72rem .78rem;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #0866ff, #4f8cff);
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: .88rem;
+            box-shadow: 0 7px 20px rgba(8,102,255,.35);
+            transition: transform .2s, box-shadow .2s;
+        }
+        .messenger-contact-bubble:hover {
+            color: #fff;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 10px 24px rgba(8,102,255,.45);
+        }
+        .messenger-contact-icon {
+            display: grid;
+            place-items: center;
+            width: 1.8rem;
+            height: 1.8rem;
+            border-radius: 50%;
+            background: rgba(255,255,255,.2);
+            font-size: 1.1rem;
+        }
+        @media (max-width: 600px) {
+            .messenger-contact-bubble {
+                right: .8rem;
+                bottom: .8rem;
+                padding: .78rem;
+            }
+            .messenger-contact-bubble span:last-child { display: none; }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="{{ url_for('static', filename='logo-sciences-sociales.png') }}" alt="Logo E-SCIALES UNILU +" class="nav-logo">
+                <div class="nav-text">
+                    <h1>E-SCIALES UNILU <img src="{{ url_for('static', filename='croix-bleue.png') }}" alt="+" class="plus-symbol"> 🎓</h1>
+                    <p>Faculté des Sciences Sociales, Politiques et Administratives - UNILU</p>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;">
+                <a href="#" id="btnInstallApp" onclick="ouvrirModalInstall(event)"
+                   title="Installer l'application sur votre téléphone"
+                   style="background:#d4a017;color:#fff;padding:.35rem .9rem;border-radius:20px;
+                          font-weight:700;font-size:.78rem;white-space:nowrap;text-decoration:none;
+                          display:inline-flex;align-items:center;gap:.4rem;align-self:flex-end;
+                          box-shadow:0 2px 8px rgba(212,160,23,.4);transition:opacity .2s;">
+                    📲 Télécharger l'application
+                </a>
+                <ul class="nav-menu" style="margin:0;">
+                    <li><a href="{{ url_for('index') }}">Accueil</a></li>
+                    <li><a href="{{ url_for('inscription') }}">Inscription</a></li>
+                    <li><a href="{{ url_for('consulter_horaires') }}">Horaires</a></li>
+                    <li><a href="{{ url_for('a_propos') }}">À PROPOS</a></li>
+                    <li><a href="{{ url_for('departements') }}">Départements</a></li>
+                    <li><a href="{{ url_for('communiques') }}">Communiqués</a></li>
+                    {% if session.get('prof_logged_in') %}
+                        <li><a href="{{ url_for('decanat_presences') }}">Gestion présence</a></li>
+                        <li><a href="{{ url_for('prof_logout') }}">Déconnexion Prof</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('prof_login') }}">Professeur</a></li>
+                    {% endif %}
+                    {% if session.get('decanat_logged_in') %}
+                        <li><a href="{{ url_for('decanat_dashboard') }}">Tableau de bord</a></li>
+                        <li><a href="{{ url_for('decanat_chat') }}">💬 Messages</a></li>
+                        <li><a href="{{ url_for('decanat_logout') }}">Déconnexion</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('decanat_login') }}">DECANAT</a></li>
+                    {% endif %}
+                    <li><a href="{{ url_for('bulletins_portail') }}">Bulletins</a></li>
+                    <li><a href="{{ url_for('releves_portail') }}">Relevés</a></li>
+                    <li><a href="{{ url_for('recours_form') }}">Recours</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 Université de Lubumbashi - E-SCIALES UNILU <img src="{{ url_for('static', filename='croix-bleue.png') }}" alt="+" class="plus-symbol" style="width: 0.9em; height: 0.9em;"></p>
+            <p style="margin-top:.3rem;font-size:.85em;">Site développé par <span style="color:#8b0000;font-weight:600;">Professeur KAKEZ Dieudonné, VDE</span>.</p>
+        </div>
+    </footer>
+
+    {% if chat_widget_enabled %}
+    <a class="messenger-contact-bubble" href="{{ url_for('chat') }}"
+       aria-label="Ouvrir le contact avec le DÉCANAT"
+       title="Contacter le DÉCANAT">
+        <span class="messenger-contact-icon">💬</span>
+        <span>Contacter le DÉCANAT</span>
+    </a>
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+
+    <!-- ═══ Modal installation PWA ═══ -->
+    <div id="modalInstall" style="display:none;position:fixed;inset:0;z-index:9999;
+         background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+      <div style="background:#fff;border-radius:16px;max-width:420px;width:92%;
+                  padding:2rem 1.6rem;box-shadow:0 8px 32px rgba(0,0,0,.3);position:relative;">
+        <button onclick="fermerModalInstall()"
+                style="position:absolute;top:.8rem;right:1rem;background:none;border:none;
+                       font-size:1.4rem;cursor:pointer;color:#666;">✕</button>
+        <div style="text-align:center;margin-bottom:1.2rem;">
+          <img src="{{ url_for('static', filename='logo-sciences-sociales.png') }}"
+               style="width:64px;height:64px;border-radius:12px;object-fit:contain;
+                      border:2px solid #e0e7ff;">
+          <h2 style="margin:.6rem 0 .2rem;color:#1a3a6b;font-size:1.15rem;">E-SCIALES UNILU+</h2>
+          <p style="color:#555;font-size:.88rem;margin:0;">Installez l'application sur votre téléphone</p>
+        </div>
+
+        <!-- Bouton Android (affiché si le navigateur supporte le prompt) -->
+        <div id="zoneAndroid" style="display:none;margin-bottom:1rem;">
+          <button id="btnPromptInstall" onclick="declencherInstall()"
+                  style="width:100%;padding:.85rem;background:#1a3a6b;color:#fff;border:none;
+                         border-radius:10px;font-size:1rem;font-weight:600;cursor:pointer;
+                         display:flex;align-items:center;justify-content:center;gap:.6rem;">
+            🤖 Installer sur Android
+          </button>
+        </div>
+
+        <!-- Instructions iOS -->
+        <div id="zoneIOS" style="background:#f0f4ff;border-radius:10px;padding:1rem;margin-bottom:1rem;">
+          <p style="font-weight:600;color:#1a3a6b;margin:0 0 .5rem;font-size:.93rem;">
+            🍎 Sur iPhone / iPad (Safari)
+          </p>
+          <ol style="margin:0;padding-left:1.3rem;color:#333;font-size:.88rem;line-height:1.7;">
+            <li>Ouvrez cette page dans <strong>Safari</strong></li>
+            <li>Appuyez sur <strong>Partager</strong> <span style="font-size:1.1em;">⎙</span></li>
+            <li>Choisissez <strong>« Sur l'écran d'accueil »</strong></li>
+            <li>Confirmez avec <strong>Ajouter</strong></li>
+          </ol>
+        </div>
+
+        <!-- Instructions Android Manuel -->
+        <div id="zoneAndroidManuel" style="background:#f0f9f0;border-radius:10px;padding:1rem;">
+          <p style="font-weight:600;color:#1a6b3a;margin:0 0 .5rem;font-size:.93rem;">
+            🤖 Sur Android (Chrome) — méthode manuelle
+          </p>
+          <ol style="margin:0;padding-left:1.3rem;color:#333;font-size:.88rem;line-height:1.7;">
+            <li>Appuyez sur le menu <strong>⋮</strong> en haut à droite</li>
+            <li>Choisissez <strong>« Ajouter à l'écran d'accueil »</strong></li>
+            <li>Confirmez avec <strong>Ajouter</strong></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // ── PWA : enregistrement du Service Worker ──
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/static/sw.js').catch(() => {});
+        });
+      }
+
+      // ── Gestion du prompt d'installation (Android/Chrome) ──
+      let _deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        _deferredPrompt = e;
+        // Montrer le bouton Android natif
+        const z = document.getElementById('zoneAndroid');
+        if (z) z.style.display = 'block';
+      });
+
+      function ouvrirModalInstall(e) {
+        if (e) e.preventDefault();
+        document.getElementById('modalInstall').style.display = 'flex';
+      }
+
+      function fermerModalInstall() {
+        document.getElementById('modalInstall').style.display = 'none';
+      }
+
+      function declencherInstall() {
+        if (!_deferredPrompt) return;
+        _deferredPrompt.prompt();
+        _deferredPrompt.userChoice.then(() => {
+          _deferredPrompt = null;
+          fermerModalInstall();
+        });
+      }
+
+      // Fermer en cliquant sur le fond
+      document.getElementById('modalInstall').addEventListener('click', function(e) {
+        if (e.target === this) fermerModalInstall();
+      });
+    </script>
+</body>
+</html>

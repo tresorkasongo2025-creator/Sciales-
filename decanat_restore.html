@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Sauvegarde & Restauration{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>💾 Sauvegarde &amp; Restauration des données</h2>
+    <p>Exportez toutes les données de la base ou restaurez-les depuis un fichier de sauvegarde.</p>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% for category, message in messages %}
+    <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}"
+         style="padding:.75rem 1rem;border-radius:8px;margin-bottom:1rem;
+                background:{{ '#d1e7dd' if category == 'success' else '#f8d7da' }};
+                color:{{ '#0a3622' if category == 'success' else '#58151c' }};
+                border:1px solid {{ '#a3cfbb' if category == 'success' else '#f1aeb5' }};">
+        {{ message }}
+    </div>
+  {% endfor %}
+{% endwith %}
+
+{% if counts is not none and counts %}
+<div style="background:#f0faf4;border:1px solid #a3cfbb;border-radius:8px;padding:1rem 1.25rem;margin-bottom:1.5rem;">
+    <h4 style="margin:0 0 .6rem;color:#0a3622;">✅ Détail de la restauration</h4>
+    <table style="border-collapse:collapse;width:100%;max-width:420px;">
+        {% for label, nb in counts.items() %}
+        <tr>
+            <td style="padding:.25rem .5rem;color:#555;">{{ label }}</td>
+            <td style="padding:.25rem .5rem;font-weight:700;color:{{ '#198754' if nb > 0 else '#aaa' }};">
+                {{ nb }} importé{{ 's' if nb > 1 else '' }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;max-width:900px;">
+
+    <!-- ── Export ─────────────────────────────────────────────────────────── -->
+    <div class="card" style="border-top:4px solid #0d6efd;">
+        <div class="card-icon">⬇️</div>
+        <h3>Sauvegarder les données</h3>
+        <p style="color:#555;font-size:.9rem;margin-bottom:1rem;">
+            Télécharge un fichier <code>.json</code> contenant tous les enregistrements
+            de la base de données (étudiants, bulletins, reçus, paiements, sessions, etc.).
+            Conservez ce fichier en lieu sûr.
+        </p>
+        <a href="{{ url_for('decanat_backup') }}"
+           class="btn btn-primary"
+           style="display:inline-block;text-decoration:none;">
+            ⬇️ Télécharger la sauvegarde
+        </a>
+    </div>
+
+    <!-- ── Restore ────────────────────────────────────────────────────────── -->
+    <div class="card" style="border-top:4px solid #198754;">
+        <div class="card-icon">⬆️</div>
+        <h3>Restaurer depuis une sauvegarde</h3>
+        <p style="color:#555;font-size:.9rem;margin-bottom:.5rem;">
+            Importe les données depuis un fichier de sauvegarde <code>.json</code>
+            généré par ce système. Les enregistrements déjà présents ne sont
+            <strong>pas écrasés</strong> (aucune duplication).
+        </p>
+        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:6px;
+                    padding:.6rem .8rem;font-size:.82rem;color:#664d03;margin-bottom:.9rem;">
+            ⚠️ Vérifiez que la sauvegarde provient bien de cette application avant
+            de l'importer.
+        </div>
+        <form method="POST" enctype="multipart/form-data"
+              action="{{ url_for('decanat_restore') }}"
+              onsubmit="return confirmRestore(this)">
+            <div style="margin-bottom:.75rem;">
+                <label for="backup_file"
+                       style="display:block;font-weight:600;margin-bottom:.35rem;font-size:.9rem;">
+                    Fichier de sauvegarde (.json)
+                </label>
+                <input type="file" name="backup_file" id="backup_file"
+                       accept=".json" required
+                       style="display:block;width:100%;padding:.45rem .6rem;
+                              border:1.5px solid #ccc;border-radius:6px;
+                              font-size:.88rem;box-sizing:border-box;">
+            </div>
+            <button type="submit" class="btn btn-primary"
+                    style="background:#198754;border-color:#198754;">
+                ⬆️ Lancer la restauration
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<div style="margin-top:1.5rem;">
+    <a href="{{ url_for('decanat_dashboard') }}"
+       style="color:#6c757d;text-decoration:none;font-size:.9rem;">
+        ← Retour au tableau de bord
+    </a>
+</div>
+
+<script>
+function confirmRestore(form) {
+    const file = form.backup_file.files[0];
+    if (!file) return false;
+    return confirm(
+        'Confirmer la restauration depuis "' + file.name + '" ?\n\n' +
+        'Les enregistrements déjà présents dans la base ne seront pas modifiés.\n' +
+        'Seuls les enregistrements manquants seront ajoutés.'
+    );
+}
+</script>
+{% endblock %}

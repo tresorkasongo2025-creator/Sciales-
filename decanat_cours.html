@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des cours - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📚 Gestion des cours</h2>
+    <div class="header-actions">
+        <a href="{{ url_for('decanat_cours_masse') }}" class="btn btn-primary" style="margin-right: 1rem;">
+            📝 Ajout en masse
+        </a>
+        <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+    </div>
+</div>
+
+<div class="form-container">
+    <h3>➕ Ajouter un nouveau cours</h3>
+    <form method="POST" class="inscription-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="code">Code du cours *</label>
+                <input type="text" id="code" name="code" required placeholder="Ex: POL101">
+            </div>
+            <div class="form-group">
+                <label for="nom">Nom du cours *</label>
+                <input type="text" id="nom" name="nom" required placeholder="Ex: Introduction aux Relations Internationales">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="departement">Département *</label>
+                <select id="departement" name="departement" required>
+                    <option value="">Sélectionner...</option>
+                    {% for dept in departements %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="promotion">Promotion *</label>
+                <select id="promotion" name="promotion" required>
+                    <option value="">Sélectionner...</option>
+                    {% for promo in promotions %}
+                    <option value="{{ promo }}">{{ promo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                ✅ Ajouter le cours
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="table-container" style="margin-top: 2rem;">
+    <h3 style="margin-bottom: 1rem; padding: 0 1rem;">Liste des cours</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Code</th>
+                <th>Nom du cours</th>
+                <th>Département</th>
+                <th>Promotion</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if cours_list %}
+                {% for cours in cours_list %}
+                <tr>
+                    <td><strong>{{ cours.code }}</strong></td>
+                    <td>{{ cours.nom }}</td>
+                    <td>{{ cours.departement }}</td>
+                    <td>{{ cours.promotion }}</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('supprimer_cours', cours_id=cours.id) }}" 
+                              style="display: inline;" 
+                              onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce cours ?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">
+                                🗑️ Supprimer
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="5" class="empty-state">
+                        Aucun cours enregistré. Ajoutez votre premier cours ci-dessus.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<div class="table-footer">
+    <p><strong>Total:</strong> {{ cours_list|length }} cours</p>
+</div>
+{% endblock %}

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Listes d'identifiants – DECANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+:root { --marine: #0d2666; --bleu: #1a4db8; --or: #bfa01a; }
+
+.hero {
+    background: linear-gradient(135deg, var(--marine) 0%, #1a4db8 60%, #1e56d0 100%);
+    color: white; padding: 2rem; border-radius: 14px; margin-bottom: 2rem;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.hero h2 { margin: 0 0 .3rem; font-size: 1.6rem; }
+.hero p  { margin: 0; opacity: .85; font-size: .9rem; }
+
+.panel { background: white; border-radius: 14px; padding: 1.8rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 1.8rem; }
+.panel h3 { margin-top: 0; color: var(--marine); border-bottom: 2px solid #e8ecf5;
+    padding-bottom: .7rem; font-size: 1.1rem; }
+
+/* Upload zone */
+.upload-zone {
+    border: 2px dashed #c5d3f5; border-radius: 12px; padding: 2rem;
+    text-align: center; background: #f8faff; transition: border-color .2s; cursor: pointer;
+    margin-bottom: 1.2rem; position: relative; }
+.upload-zone:hover, .upload-zone.drag { border-color: var(--bleu); background: #eef3ff; }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.upload-zone .uz-icon { font-size: 2.5rem; margin-bottom: .5rem; }
+.upload-zone .uz-txt  { font-weight: 700; color: var(--marine); font-size: 1rem; }
+.upload-zone .uz-sub  { color: #888; font-size: .83rem; margin-top: .3rem; }
+.file-list { list-style: none; padding: 0; margin: .5rem 0 1rem; display: flex; flex-wrap: wrap; gap: .5rem; }
+.file-item { background: #dbeafe; color: var(--marine); border-radius: 20px;
+    padding: .25rem .8rem; font-size: .82rem; font-weight: 600;
+    display: flex; align-items: center; gap: .4rem; }
+
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: .3rem; }
+.form-group label { font-weight: 700; font-size: .8rem; color: #444; text-transform: uppercase; letter-spacing: .5px; }
+.form-group input, .form-group select {
+    padding: .6rem .9rem; border: 2px solid #ddd; border-radius: 9px; font-size: .93rem;
+    transition: border-color .2s; }
+.form-group input:focus, .form-group select:focus {
+    outline: none; border-color: var(--bleu); box-shadow: 0 0 0 3px rgba(26,77,184,.1); }
+
+.check-wrap { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; font-size: .88rem; color: #555; }
+.check-wrap input { width: 16px; height: 16px; accent-color: var(--bleu); }
+
+.btn { padding: .75rem 1.6rem; border: none; border-radius: 10px; font-size: .93rem;
+    font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: .5rem; transition: all .2s; }
+.btn-primary { background: var(--bleu); color: white; }
+.btn-primary:hover { background: var(--marine); }
+
+/* Promos list */
+.promo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+.promo-card {
+    background: #f8faff; border: 2px solid #e0e8f5; border-radius: 12px;
+    padding: 1.1rem 1.3rem; display: flex; flex-direction: column; gap: .6rem; }
+.promo-card.active { border-color: var(--bleu); background: #eef3ff; }
+.promo-card .pc-name { font-weight: 800; color: var(--marine); font-size: .95rem; line-height: 1.3; }
+.promo-card .pc-nb   { font-size: .82rem; color: #666; }
+.pc-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .3rem; }
+.btn-xs { padding: .25rem .7rem; border-radius: 6px; font-size: .78rem; border: none;
+    cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
+.btn-xs.blue { background: var(--bleu); color: white; }
+.btn-xs.red  { background: #dc3545; color: white; }
+.btn-xs.gray { background: #6c757d; color: white; }
+
+/* Table étudiants */
+.etu-table { width: 100%; border-collapse: collapse; font-size: .87rem; }
+.etu-table th { background: var(--marine); color: white; padding: .55rem 1rem; text-align: left; font-size: .82rem; }
+.etu-table td { padding: .55rem 1rem; border-bottom: 1px solid #eee; }
+.etu-table tr:hover td { background: #f5f8ff; }
+.mat-badge { background: #dbeafe; color: var(--marine); border-radius: 20px;
+    padding: .1rem .55rem; font-size: .78rem; font-weight: 700; font-family: monospace; }
+.pw-badge  { background: #fef9c3; color: #78350f; border-radius: 20px;
+    padding: .1rem .55rem; font-size: .78rem; font-weight: 700; letter-spacing: 1px; }
+
+.info-box { background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px;
+    padding: .9rem 1.1rem; font-size: .85rem; color: #1e40af; margin-bottom: 1.2rem; }
+.info-box strong { color: var(--marine); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="hero">
+    <div>
+        <h2>📋 Listes d'identifiants officiels</h2>
+        <p>Importez les listes UNILU (matricules + mots de passe) par promotion pour chaque étudiant retrouve son bulletin.</p>
+    </div>
+    <a href="{{ url_for('decanat_bulletins') }}"
+       style="background:rgba(255,255,255,.2);color:white;padding:.6rem 1.2rem;
+              border-radius:8px;text-decoration:none;font-weight:600;font-size:.88rem;">
+        ← Bulletins
+    </a>
+</div>
+
+<!-- Info -->
+<div class="info-box">
+    🔗 <strong>Comment ça fonctionne :</strong>
+    Importez ici les listes officielles d'identifiants (fichiers PDF UNILU) pour chaque promotion.
+    Lors de l'import d'une grille de délibération, les noms des étudiants seront automatiquement
+    appariés à leur matricule officiel de cette liste.
+    L'étudiant recherche ensuite son bulletin avec ce matricule.
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
+
+    <!-- Formulaire d'import -->
+    <div class="panel">
+        <h3>⬆️ Importer une ou plusieurs listes PDF</h3>
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+
+            <div class="upload-zone" id="dropZone">
+                <input type="file" name="fichiers" id="fileInput"
+                       multiple accept=".pdf" onchange="updateFileList(this)">
+                <div class="uz-icon">📄</div>
+                <div class="uz-txt">Glissez les fichiers PDF ici ou cliquez</div>
+                <div class="uz-sub">Un ou plusieurs fichiers PDF de listes UNILU</div>
+            </div>
+            <ul class="file-list" id="fileList"></ul>
+
+            <div class="form-group" style="margin-bottom:1rem;">
+                <label>Promotion (facultatif – écrase la détection automatique)</label>
+                <input type="text" name="promotion_manuelle"
+                       placeholder="Ex : M1 ANTHROPOLOGIE  (laisser vide = auto)">
+            </div>
+
+            <div class="check-wrap">
+                <input type="checkbox" name="remplacer" value="1" id="chkRemplacer">
+                <label for="chkRemplacer">Remplacer les identifiants déjà importés pour cette promotion</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                📥 Importer
+            </button>
+        </form>
+    </div>
+
+    <!-- Promotions importées -->
+    <div class="panel">
+        <h3>🎓 Promotions disponibles ({{ promos | length }})</h3>
+        {% if promos %}
+        <div class="promo-grid">
+            {% for p in promos %}
+            <div class="promo-card {% if p.promotion == promo_sel %}active{% endif %}">
+                <div class="pc-name">{{ p.promotion }}</div>
+                <div class="pc-nb">{{ p.nb }} étudiant{{ 's' if p.nb > 1 }}</div>
+                <div class="pc-actions">
+                    <a href="{{ url_for('decanat_listes_identifiants', promo=p.promotion) }}"
+                       class="btn-xs blue">👁 Voir</a>
+                    <form method="POST" action="{{ url_for('decanat_listes_supprimer') }}" style="display:inline"
+                          onsubmit="return confirm('Supprimer tous les identifiants de « {{ p.promotion }} » ?')">
+                        <input type="hidden" name="promotion" value="{{ p.promotion }}">
+                        <button type="submit" class="btn-xs red">🗑 Supprimer</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="text-align:center;color:#aaa;padding:2rem;">
+            Aucune liste importée pour l'instant.
+        </p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tableau des étudiants pour la promotion sélectionnée -->
+{% if promo_sel and etudiants_promo %}
+<div class="panel">
+    <h3>👥 Identifiants – {{ promo_sel }} ({{ etudiants_promo | length }} étudiants)</h3>
+    <div style="overflow-x:auto;">
+    <table class="etu-table">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nom complet</th>
+                <th>Matricule</th>
+                <th>Mot de passe</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for e in etudiants_promo %}
+            <tr>
+                <td style="color:#aaa;">{{ loop.index }}</td>
+                <td><strong>{{ e.nom }}</strong></td>
+                <td><span class="mat-badge">{{ e.matricule }}</span></td>
+                <td><span class="pw-badge">{{ e.mot_de_passe or '—' }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function updateFileList(input) {
+    const ul = document.getElementById('fileList');
+    ul.innerHTML = '';
+    Array.from(input.files).forEach(f => {
+        const li = document.createElement('li');
+        li.className = 'file-item';
+        li.innerHTML = `📄 ${f.name}`;
+        ul.appendChild(li);
+    });
+}
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag');
+    document.getElementById('fileInput').files = e.dataTransfer.files;
+    updateFileList(document.getElementById('fileInput'));
+});
+</script>
+{% endblock %}

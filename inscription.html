@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}Inscription - E-SCIALES UNILU +{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📝 Formulaire d'inscription</h2>
+    {% if not registration_open|default(true) %}
+    <p style="color:#b02a37;font-weight:700;">🔒 Les inscriptions sont fermées pour le moment.</p>
+    {% else %}
+    <p>Veuillez remplir tous les champs ci-dessous</p>
+    {% endif %}
+</div>
+
+{% if registration_open|default(true) %}
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data" class="inscription-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nom">Nom *</label>
+                <input type="text" id="nom" name="nom" required>
+            </div>
+            <div class="form-group">
+                <label for="postnom">Postnom *</label>
+                <input type="text" id="postnom" name="postnom" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="prenom">Prénom *</label>
+                <input type="text" id="prenom" name="prenom" required>
+            </div>
+            <div class="form-group">
+                <label for="sexe">Sexe *</label>
+                <select id="sexe" name="sexe" required>
+                    <option value="">Sélectionner...</option>
+                    <option value="M">Masculin</option>
+                    <option value="F">Féminin</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="telephone">N° Téléphone *</label>
+                <input type="tel" id="telephone" name="telephone" required 
+                       placeholder="+243 000 000 000">
+            </div>
+            <div class="form-group">
+                <label for="departement">Département *</label>
+                <select id="departement" name="departement" required>
+                    <option value="">Sélectionner...</option>
+                    {% for dept in departements %}
+                    <option value="{{ dept }}">{{ dept }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="promotion">Promotion *</label>
+                <select id="promotion" name="promotion" required>
+                    <option value="">Sélectionner...</option>
+                    {% for promo in promotions %}
+                    <option value="{{ promo }}">{{ promo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="photo">Photo (PNG, JPG, JPEG) *</label>
+                <input type="file" id="photo" name="photo" accept="image/*" required>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary btn-large">
+                ✅ S'inscrire
+            </button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                ❌ Annuler
+            </a>
+        </div>
+    </form>
+</div>
+{% else %}
+<div class="form-container" style="text-align:center;">
+    <div style="font-size:3rem;">🔒</div>
+    <h3>Formulaire fermé</h3>
+    <p>Le DÉCANAT a temporairement fermé le formulaire d'inscription.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Retour à l'accueil</a>
+</div>
+{% endif %}
+{% endblock %}

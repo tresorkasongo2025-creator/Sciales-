@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion page Départements - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>✏️ Éditer la page Départements</h2>
+    <p>Modifiez les descriptions et débouchés professionnels des 4 départements</p>
+</div>
+
+<div class="form-container">
+    <form method="POST" class="decanat-form">
+        
+        <!-- DÉPARTEMENT 1: Sociologie et Sciences du travail -->
+        <div class="dept-section">
+            <h3>1️⃣ Département de Sociologie et Sciences du travail</h3>
+            
+            <div class="form-group">
+                <label for="sociologie_description">Description</label>
+                <textarea id="sociologie_description" name="sociologie_description" rows="4" required>{{ content_data.get('sociologie_description', 'La sociologie est une unité de formation qui étudie la nature et le fonctionnement de différents groupes sociaux et leurs interactions dans des contextes variés. Elle s\'est enrichie d\'une nouvelle filière : les sciences du travail.') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="sociologie_formation">Information sur la formation</label>
+                <textarea id="sociologie_formation" name="sociologie_formation" rows="3" required>{{ content_data.get('sociologie_formation', 'La formation y est organisée en cinq ans. La Licence couvre trois ans (1er cycle), la Maîtrise (Master) s\'étale sur deux ans (2ème cycle).') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="sociologie_debouches">Débouchés professionnels (un par ligne)</label>
+                <textarea id="sociologie_debouches" name="sociologie_debouches" rows="8" required>{{ content_data.get('sociologie_debouches', 'Conseiller social\nConsultant/expert/Conseiller à l\'emploi\nAssistant des ressources humaines\nAssistant de l\'inspecteur du travail\nChargé de politique sociale des entreprises\nChargé de projet de développement\nÉducateur socio-sanitaire\nEnquêteur social\nEthnologue\nGestionnaire des mouvements associatifs\nAnimateur ou Éducateur social\nMédiateur des conflits') }}</textarea>
+            </div>
+        </div>
+
+        <!-- DÉPARTEMENT 2: Anthropologie -->
+        <div class="dept-section">
+            <h3>2️⃣ Département d'Anthropologie</h3>
+            
+            <div class="form-group">
+                <label for="anthropologie_description">Description</label>
+                <textarea id="anthropologie_description" name="anthropologie_description" rows="4" required>{{ content_data.get('anthropologie_description', 'L\'Anthropologie est une discipline qui place l\'être humain au centre de ses préoccupations. Elle cherche à expliquer et comprendre les aspects sociaux, culturels, biologiques... des communautés humaines, passées et présentes.') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="anthropologie_formation">Information sur la formation</label>
+                <textarea id="anthropologie_formation" name="anthropologie_formation" rows="3" required>{{ content_data.get('anthropologie_formation', 'La formation s\'étale sur cinq ans, dont trois de Licence (1er cycle) et deux de Maîtrise ou Master (2ème cycle).') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="anthropologie_debouches">Débouchés professionnels (un par ligne)</label>
+                <textarea id="anthropologie_debouches" name="anthropologie_debouches" rows="6" required>{{ content_data.get('anthropologie_debouches', 'Gestionnaire du patrimoine culturel ou toute autre institution culturelle\nConservateur de musée\nChef de projet d\'aide humanitaire\nConsultant en entrepreneuriat et stratégie de développement communautaire\nDirecteur d\'ONG\nMédiateur culturel dans le secteur de la santé et du développement') }}</textarea>
+            </div>
+        </div>
+
+        <!-- DÉPARTEMENT 3: Relations Internationales -->
+        <div class="dept-section">
+            <h3>3️⃣ Département des Relations Internationales</h3>
+            
+            <div class="form-group">
+                <label for="relations_int_description">Description</label>
+                <textarea id="relations_int_description" name="relations_int_description" rows="4" required>{{ content_data.get('relations_int_description', 'Les Relations Internationales est un domaine du savoir (savoir-faire et savoir-être) et de professionnalisation des cadres au service de l\'innovation en matière de paix et de sécurité internationales à triple niveau : local, régional et international.') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="relations_int_formation">Information sur la formation</label>
+                <textarea id="relations_int_formation" name="relations_int_formation" rows="3" required>{{ content_data.get('relations_int_formation', 'La formation y est organisée en cinq ans. La Licence couvre trois ans (1er cycle), la Maîtrise (Master) s\'étale sur deux ans (2ème cycle).') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="relations_int_debouches">Débouchés professionnels (un par ligne)</label>
+                <textarea id="relations_int_debouches" name="relations_int_debouches" rows="10" required>{{ content_data.get('relations_int_debouches', 'Agent diplomatique, consulaire ou aéroportuaire\nAgent au protocole d\'État ou aux relations publiques\nAgent de renseignement externe\nAgent bancaire et boursier\nConsultant en développement international\nConsultant en questions militaires et stratégiques\nChargé de coopération internationale\nFonctionnaire au sein des organismes internationaux\nGestionnaire des conflits\nDéclarant en douane\nManager des projets internationaux\nMinistre des affaires étrangères, diplomate, consul\nExpert en lobbying') }}</textarea>
+            </div>
+        </div>
+
+        <!-- DÉPARTEMENT 4: Sciences Politiques et Administratives -->
+        <div class="dept-section">
+            <h3>4️⃣ Département des Sciences Politiques et Administratives</h3>
+            
+            <div class="form-group">
+                <label for="spa_description">Description</label>
+                <textarea id="spa_description" name="spa_description" rows="4" required>{{ content_data.get('spa_description', 'Les Sciences Politiques et Administratives étudient le pouvoir et l\'Administration publique. Elles forment des cadres capables de comprendre les phénomènes politiques, administratifs et de développement. Organisée en deux filières: Science politique, Science administrative et Management.') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="spa_formation">Information sur la formation</label>
+                <textarea id="spa_formation" name="spa_formation" rows="3" required>{{ content_data.get('spa_formation', 'La formation s\'étale sur cinq ans, dont trois de Licence (1er cycle) et deux de Maîtrise ou Master (2ème cycle).') }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="spa_debouches">Débouchés professionnels (un par ligne)</label>
+                <textarea id="spa_debouches" name="spa_debouches" rows="7" required>{{ content_data.get('spa_debouches', 'Mandataire de l\'État\nAgent de carrière de service public ou privé\nConseiller administratif ou politique\nCadre de territoriale\nGestionnaire du personnel\nDéclarant en douane\nManager\nSecrétaire de direction\nAgent commercial') }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Enregistrer les modifications</button>
+            <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">Retour au dashboard</a>
+            <a href="{{ url_for('departements') }}" class="btn btn-info" target="_blank">👁️ Voir la page</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.form-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.dept-section {
+    background: #f8f9fa;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 10px;
+    border-left: 5px solid #667eea;
+}
+
+.dept-section h3 {
+    color: #667eea;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+}
+
+.decanat-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.decanat-form textarea,
+.decanat-form input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.decanat-form textarea:focus,
+.decanat-form input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label small {
+    display: block;
+    font-weight: normal;
+    color: #666;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+    flex-wrap: wrap;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #138496;
+}
+
+@media (max-width: 768px) {
+    .form-container {
+        padding: 1rem;
+    }
+    
+    .dept-section {
+        padding: 1rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

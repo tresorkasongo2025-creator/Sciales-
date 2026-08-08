@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Bulletins Académiques – DECANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+.bul-hero { background: linear-gradient(135deg, #0d2666 0%, #1a4db8 100%);
+    color: white; padding: 2rem; border-radius: 12px; margin-bottom: 2rem; }
+.bul-hero h2 { margin: 0 0 .4rem; font-size: 1.6rem; }
+.bul-hero p  { margin: 0; opacity: .85; }
+.import-card { background: white; border-radius: 12px; padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,.08); margin-bottom: 2rem; }
+.import-card h3 { margin-top: 0; color: #0d2666; border-bottom: 2px solid #e8ecf0; padding-bottom: .6rem; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem; }
+.form-group { display: flex; flex-direction: column; gap: .3rem; }
+.form-group label { font-weight: 600; font-size: .85rem; color: #444; }
+.form-group input, .form-group select {
+    padding: .55rem .8rem; border: 1.5px solid #ddd; border-radius: 7px; font-size: .95rem; }
+.form-group input:focus, .form-group select:focus {
+    outline: none; border-color: #1a4db8; box-shadow: 0 0 0 3px rgba(26,77,184,.12); }
+.upload-zone { border: 2px dashed #1a4db8; border-radius: 10px; padding: 1.5rem;
+    text-align: center; background: #f5f8ff; cursor: pointer; transition: all .2s; }
+.upload-zone:hover { background: #eaf0ff; }
+.upload-zone input { display: none; }
+.upload-zone label { cursor: pointer; color: #1a4db8; font-weight: 600; }
+.montant-select { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .3rem; }
+.montant-opt { padding: .4rem .9rem; border: 1.5px solid #ddd; border-radius: 20px;
+    cursor: pointer; font-size: .88rem; transition: all .2s; }
+.montant-opt.active { background: #0d2666; color: white; border-color: #0d2666; }
+.sessions-table { width: 100%; border-collapse: collapse; }
+.sessions-table th { background: #0d2666; color: white; padding: .7rem 1rem; text-align: left; font-size: .88rem; }
+.sessions-table td { padding: .7rem 1rem; border-bottom: 1px solid #eee; font-size: .9rem; }
+.sessions-table tr:hover td { background: #f5f8ff; }
+.badge-count { background: #1a4db8; color: white; padding: .2rem .6rem;
+    border-radius: 20px; font-size: .8rem; font-weight: 700; }
+.badge-paid  { background: #198754; color: white; padding: .2rem .6rem;
+    border-radius: 20px; font-size: .8rem; }
+.actions-bar { display: flex; gap: .5rem; flex-wrap: wrap; }
+.btn-sm { padding: .3rem .7rem; font-size: .82rem; border-radius: 5px; border: none;
+    cursor: pointer; text-decoration: none; display: inline-block; transition: all .2s; }
+.btn-blue  { background: #1a4db8; color: white; }
+.btn-blue:hover  { background: #0d2666; color: white; }
+.btn-green { background: #198754; color: white; }
+.btn-green:hover { background: #146c43; color: white; }
+.btn-red   { background: #dc3545; color: white; }
+.btn-red:hover   { background: #a71d2a; color: white; }
+.btn-outline { background: white; color: #1a4db8; border: 1.5px solid #1a4db8; }
+.btn-outline:hover { background: #1a4db8; color: white; }
+.empty-state { text-align: center; padding: 3rem; color: #888; }
+.empty-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+.nav-tabs-bul { display: flex; gap: 0; border-bottom: 2px solid #e0e4ea; margin-bottom: 1.5rem; }
+.nav-tab-bul { padding: .6rem 1.2rem; background: none; border: none; cursor: pointer;
+    font-size: .9rem; color: #666; border-bottom: 3px solid transparent; margin-bottom: -2px;
+    text-decoration: none; display: inline-flex; align-items: center; gap: .25rem; }
+.nav-tab-bul.active { color: #0d2666; font-weight: 700; border-bottom-color: #0d2666; }
+.alert-badge { display: inline-flex; align-items: center; justify-content: center;
+    background: #dc3545; color: white; border-radius: 50%; width: 1.2rem; height: 1.2rem;
+    font-size: .68rem; font-weight: 800; vertical-align: middle; line-height: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bul-hero">
+    <h2>📋 Bulletins Académiques</h2>
+    <p>Importez une grille de délibération pour générer automatiquement tous les bulletins</p>
+</div>
+
+<!-- Tabs de navigation -->
+<div class="nav-tabs-bul">
+    <a href="{{ url_for('decanat_bulletins') }}" class="nav-tab-bul active">📥 Import grille</a>
+    <a href="{{ url_for('decanat_bulletins_dashboard') }}" class="nav-tab-bul">
+        📊 Tableau de bord
+        {% if nb_nouveaux_suspects is defined and nb_nouveaux_suspects and nb_nouveaux_suspects > 0 %}
+            <span class="alert-badge" title="{{ nb_nouveaux_suspects }} nouveau(x) scan(s) suspect(s)">
+                {{ nb_nouveaux_suspects if nb_nouveaux_suspects < 100 else '99+' }}
+            </span>
+        {% endif %}
+    </a>
+    <a href="{{ url_for('decanat_bulletins_diagnostique') }}" class="nav-tab-bul">🔬 Diagnostic</a>
+</div>
+
+<!-- Formulaire d'import -->
+<div class="import-card">
+    <h3>📥 Importer une grille de délibération</h3>
+    <form method="POST" action="{{ url_for('decanat_bulletins') }}" enctype="multipart/form-data">
+        <div class="form-grid" style="margin-bottom:1rem;">
+            <div class="form-group">
+                <label>Année académique</label>
+                <select name="annee_academique" required>
+                    <option value="2025-2026" selected>2025-2026</option>
+                    <option value="2024-2025">2024-2025</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Session</label>
+                <select name="session">
+                    <option>1ère session</option>
+                    <option>2ème session</option>
+                    <option>Session spéciale</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Semestre</label>
+                <select name="semestre">
+                    <option>1er Semestre</option>
+                    <option>2ème Semestre</option>
+                    <option>Annuel</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Promotion (optionnel — lu depuis le fichier sinon)</label>
+                <input type="text" name="promotion" placeholder="ex: BAC 1 RI">
+            </div>
+            <div class="form-group">
+                <label>Département</label>
+                <select name="departement">
+                    <option value="">— Aucun département —</option>
+                    <option>Département de Sociologie</option>
+                    <option>Département d'Anthropologie</option>
+                    <option>Département des Relations Internationales</option>
+                    <option>Département des Sciences Politiques et Administratives</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Type de grille</label>
+                <select name="type_grille" required>
+                    <option value="initial">1ère session — délibération initiale</option>
+                    <option value="recours">1ère session — recours</option>
+                    <option value="session_2">2ème session — délibération</option>
+                    <option value="recours_session_2">2ème session — recours</option>
+                </select>
+            </div>
+        </div>
+        <div style="background:#eef4ff;border-left:4px solid #1a4db8;padding:.7rem .9rem;
+                    margin:-.2rem 0 1rem;color:#24406f;font-size:.84rem;border-radius:0 7px 7px 0;">
+            <strong>Important :</strong> chaque grille est une étape indépendante et
+            s’appuie sur le matricule officiel. Une nouvelle publication ne supprime
+            jamais un accès déjà payé. Les reçus sont strictement séparés :
+            <strong>B-</strong> (1ère session), <strong>RR-</strong> (recours 1ère),
+            <strong>S2-</strong> (2ème session) et <strong>R2-</strong> (recours 2ème).
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label>Montant de consultation (Francs congolais)</label>
+            <div class="montant-select" id="montantSelect">
+                <span class="montant-opt" onclick="setMontant(2000)">2 000 FC</span>
+                <span class="montant-opt active" onclick="setMontant(5000)">5 000 FC</span>
+                <span class="montant-opt" onclick="setMontant(10000)">10 000 FC</span>
+                <span class="montant-opt" onclick="setMontant(0)">Gratuit</span>
+            </div>
+            <input type="hidden" name="montant_fc" id="montantInput" value="5000">
+        </div>
+
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label>✏️ Texte d'introduction <span style="font-weight:400;color:#888;">(optionnel — laissez vide pour le texte par défaut)</span></label>
+            <textarea name="texte_intro" rows="2" id="texteIntro"
+                style="padding:.55rem .8rem;border:1.5px solid #ddd;border-radius:7px;
+                       font-size:.92rem;resize:vertical;font-family:inherit;width:100%;"
+                placeholder="A obtenu à l'issue des évaluations de la [session] de l'année académique [année], semestre [semestre], les notes ci-dessous :"></textarea>
+            <p style="color:#888;font-size:.8rem;margin:.3rem 0 0;">
+                Les variables <code>[session]</code>, <code>[année]</code>, <code>[semestre]</code> seront remplacées automatiquement si vous les laissez dans le texte.
+            </p>
+        </div>
+
+        <div class="upload-zone" id="uploadZone">
+            <input type="file" name="grille" id="grilleFile" accept=".xls,.xlsx" required>
+            <label for="grilleFile">
+                <div style="font-size:2.5rem;margin-bottom:.5rem;">📊</div>
+                <strong>Cliquez pour sélectionner la grille Excel</strong><br>
+                <span style="color:#666;font-size:.85rem;">Formats acceptés : .xls et .xlsx</span>
+            </label>
+            <p id="fileName" style="margin-top:.5rem;color:#1a4db8;font-weight:600;display:none;"></p>
+        </div>
+
+        <div style="margin-top:1.5rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+            <button type="submit" name="action" value="generer"
+                    class="btn btn-primary" style="font-size:1rem;padding:.7rem 2rem;">
+                💾 Enregistrer les bulletins
+            </button>
+            <button type="submit" name="action" value="generer_zip"
+                    class="btn btn-primary"
+                    style="font-size:1rem;padding:.7rem 2rem;background:#198754;">
+                ⬇ Importer et télécharger le ZIP
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Liste des sessions -->
+<div class="import-card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h3 style="margin:0;">📂 Sessions importées</h3>
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+            <!-- Formulaire de filtre par date pour l'export corrections -->
+            <form id="auditDateForm" method="GET"
+                  action="{{ url_for('decanat_bulletins_audits_all_csv') }}"
+                  style="display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;">
+                <label style="font-size:.82rem;font-weight:600;color:#444;white-space:nowrap;">Du</label>
+                <input type="date" name="date_from" id="auditDateFrom"
+                       style="padding:.3rem .55rem;border:1.5px solid #ddd;border-radius:6px;font-size:.82rem;"
+                       title="Date de début (optionnelle)">
+                <label style="font-size:.82rem;font-weight:600;color:#444;white-space:nowrap;">au</label>
+                <input type="date" name="date_to" id="auditDateTo"
+                       style="padding:.3rem .55rem;border:1.5px solid #ddd;border-radius:6px;font-size:.82rem;"
+                       title="Date de fin (optionnelle)">
+                <button type="submit" class="btn-sm btn-outline"
+                        title="Télécharger le CSV des corrections (toutes sessions, filtré par date si renseignée)">
+                    ⬇ Corrections (toutes sessions)
+                </button>
+            </form>
+            <a href="{{ url_for('bulletins_portail') }}" class="btn-sm btn-outline" target="_blank">🌐 Portail étudiant</a>
+            <a href="{{ url_for('decanat_releves_cotes') }}" class="btn-sm"
+               style="background:#6f42c1;color:white;">📄 Relevés de cotes</a>
+        </div>
+    </div>
+
+    {% if sessions_list %}
+    <table class="sessions-table">
+        <thead>
+            <tr>
+                <th>Session</th>
+                <th>Promotion</th>
+                <th>Année</th>
+                <th>Montant</th>
+                <th>Bulletins</th>
+                <th>Payés</th>
+                <th>Date import</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for bs in sessions_list %}
+            {% set nb_payes = bs.bulletins | selectattr('paye') | list | length %}
+            {% set first_bd = bs.bulletins | first %}
+            {% set has_cours = first_bd and (first_bd.data_json | fromjson).get('cours') %}
+            <tr>
+                <td>
+                    <strong>{{ bs.nom }}</strong>
+                    {% if not has_cours %}
+                    <br><span style="color:#dc3545;font-size:.78rem;font-weight:700;">⚠️ 0 cours — réimporter</span>
+                    {% endif %}
+                    {% set nb_zero = (zero_moy if zero_moy is defined else {}).get(bs.id, 0) %}
+                    {% if nb_zero > 0 %}
+                    <br><span style="color:#fd7e14;font-size:.78rem;font-weight:700;"
+                              title="{{ nb_zero }} étudiant(s) avec moyenne 0 — réimporter la grille">
+                        ⚠️ {{ nb_zero }} moy. 0
+                    </span>
+                    {% endif %}
+                </td>
+                <td>{{ bs.promotion }}</td>
+                <td>{{ bs.annee }}</td>
+                <td><strong>{{ "{:,}".format(bs.montant_fc) }} FC</strong></td>
+                <td><span class="badge-count">{{ bs.bulletins | length }}</span></td>
+                <td><span class="badge-paid">{{ nb_payes }}</span></td>
+                <td style="color:#666;font-size:.85rem;">{{ bs.date_import.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td>
+                    <div class="actions-bar">
+                        <a href="{{ url_for('decanat_bulletins_session_detail', sid=bs.id) }}" class="btn-sm btn-blue">👁 Détail</a>
+                        <a href="{{ url_for('decanat_bulletins_zip', sid=bs.id) }}" class="btn-sm btn-green" target="_blank">⬇ ZIP</a>
+                        <a href="{{ url_for('decanat_releves_cotes_zip', sid=bs.id) }}" class="btn-sm"
+                           style="background:#6f42c1;color:white;" target="_blank">📄 Relevés</a>
+                        <form method="POST" action="{{ url_for('decanat_bulletins_supprimer_session', sid=bs.id) }}"
+                              style="display:inline" onsubmit="return confirm('Supprimer cette session et tous ses bulletins ?')">
+                            <button type="submit" class="btn-sm btn-red">🗑</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">📭</div>
+        <p>Aucune session importée pour l'instant.<br>Importez votre première grille ci-dessus.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function setMontant(v) {
+    document.getElementById('montantInput').value = v;
+    document.querySelectorAll('.montant-opt').forEach(el => el.classList.remove('active'));
+    event.target.classList.add('active');
+}
+document.getElementById('grilleFile').addEventListener('change', function() {
+    const fn = document.getElementById('fileName');
+    if (this.files[0]) {
+        fn.textContent = '✅ ' + this.files[0].name;
+        fn.style.display = 'block';
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion page À PROPOS - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>✏️ Éditer la page À PROPOS</h2>
+    <p>Modifiez le contenu de la page À PROPOS de la Faculté</p>
+</div>
+
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data" class="decanat-form">
+        <h3>📸 Image de la Faculté</h3>
+        <div class="current-image" style="text-align: center; margin-bottom: 2rem;">
+            {% if image_facade %}
+            <img src="{{ url_for('fichier_persistant', category='root', filename=image_facade) }}" alt="Façade Faculté"
+                 style="max-width: 600px; width: 100%; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            <p style="margin-top: 1rem; color: #666;">Image actuelle de la façade</p>
+            {% else %}
+            <div style="background:#f0f0f0;padding:2rem;border-radius:8px;color:#888;font-size:.9rem;">
+                📷 Aucune image téléversée — utilisez le champ ci-dessous pour en ajouter une.
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            <label for="image_facade">Changer la photo de la façade (PNG, JPG, JPEG)</label>
+            <input type="file" id="image_facade" name="image_facade" accept="image/png, image/jpeg, image/jpg">
+            <small>Laissez vide pour garder l'image actuelle</small>
+        </div>
+
+        <h3>📝 Textes de la page</h3>
+        
+        <div class="form-group">
+            <label for="mission_texte">Mission de la Faculté (Texte principal)</label>
+            <textarea id="mission_texte" name="mission_texte" rows="6" required>{{ content_data.get('mission_texte', 'La prestigieuse Faculté des Sciences Sociales, Politiques et Administratives de l\'Université de Lubumbashi vous souhaite une cordiale bienvenue. Elle a été créée lors de la réforme de 1971-1972. Sa mission est de former des cadres de conception et d\'exécution dans différents domaines de la vie nationale et internationale: Administration, Management, Diplomatie, Sociologie, Anthropologie, Science politique, Sciences du travail, Droit international, Économie internationale, Politique internationale, Gestion des conflits... à travers l\'enseignement, la recherche et le service à la société.') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="lmd_texte">Système LMD et premier cycle</label>
+            <textarea id="lmd_texte" name="lmd_texte" rows="5" required>{{ content_data.get('lmd_texte', 'Depuis l\'année académique 2021-2022, les enseignements et la recherche au sein de la faculté sont organisés conformément aux normes du Système LMD (Licence-Maîtrise-Doctorat). Quatre départements sont constitués: Département d\'Anthropologie (Siège), Département de Sociologie et Sciences du travail (Siège), Département des Relations Internationales (R.I.) et Département des Sciences Politiques et Administratives (S.P.A.). Dans chaque département, le premier cycle s\'étale sur trois années d\'études (Licence 1, Licence 2 et Licence 3) et conduit au diplôme de Licence ou Bachelor.') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="cycle2_texte">Deuxième cycle (Maîtrise/Master)</label>
+            <textarea id="cycle2_texte" name="cycle2_texte" rows="3" required>{{ content_data.get('cycle2_texte', 'Le deuxième cycle dure deux années d\'études (Maîtrise 1 et Maîtrise 2) et donne accès au diplôme de Maîtrise ou Master.') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="cycle3_texte">Troisième cycle (Doctorat)</label>
+            <textarea id="cycle3_texte" name="cycle3_texte" rows="6" required>{{ content_data.get('cycle3_texte', 'Le troisième cycle constitue une étape nettement distincte de l\'enseignement du deuxième cycle par sa finalité de former des spécialistes. Le candidat y acquiert une connaissance approfondie dans un groupe de matières constituant sa spécialité, ainsi qu\'un niveau élevé de maîtrise épistémologique et méthodologique de sa discipline. Le candidat suit d\'abord le programme arrêté pour l\'obtention du Diplôme d\'Études Approfondies (D.E.A.). C\'est un programme de deux ans comprenant des cours et séminaires, ainsi que la présentation d\'une dissertation écrite. La réussite à ce programme habilite le détenteur à poursuivre la préparation d\'une Thèse de Doctorat.') }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="conclusion_texte">Conclusion (valeurs civiques)</label>
+            <textarea id="conclusion_texte" name="conclusion_texte" rows="3" required>{{ content_data.get('conclusion_texte', 'Pour jouer son rôle dans la société, l\'étudiant à former doit être un bon citoyen ayant des valeurs civiques et morales. Le Logo de la Faculté représente-t-il la génération sociale, source des interactions au sein de la société nationale et internationale.') }}</textarea>
+        </div>
+
+        <h3>📍 Informations de contact</h3>
+
+        <div class="form-group">
+            <label for="adresse">Adresse</label>
+            <input type="text" id="adresse" name="adresse" value="{{ content_data.get('adresse', 'Route Kasapa, Cités universitaires, Cité Avenue de la Renaissance Africaine (Campus)') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="telephone1">Téléphone 1</label>
+            <input type="text" id="telephone1" name="telephone1" value="{{ content_data.get('telephone1', '+243 99 551 74 86') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="telephone2">Téléphone 2</label>
+            <input type="text" id="telephone2" name="telephone2" value="{{ content_data.get('telephone2', '+243 99 293 94 94') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="motto">Citation finale (Motto)</label>
+            <input type="text" id="motto" name="motto" value="{{ content_data.get('motto', '« Ici naissent les idées, se révèlent les talents et se forment les femmes et les hommes qui pensent l\'humain et la société, gouvernent avec intelligence et transforment les organisations, les nations et le monde. »') }}" required>
+        </div>
+
+        <h3>🏛️ Structure de la Faculté</h3>
+        
+        <h4 style="color: #667eea; margin-top: 1.5rem; margin-bottom: 1rem;">👔 Décanat</h4>
+        
+        <div class="form-group">
+            <label for="doyenne">Le Doyen de la Faculté</label>
+            <input type="text" id="doyenne" name="doyenne" value="{{ content_data.get('doyenne', 'P.O. KAYIBA BUKASA Gertrude') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="vice_doyen_enseignement">Le Vice-Doyen chargé de l'Enseignement</label>
+            <input type="text" id="vice_doyen_enseignement" name="vice_doyen_enseignement" value="{{ content_data.get('vice_doyen_enseignement', 'Pr KAKEZ KAYEMBE Dieudonné') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="vice_doyen_recherche">Le Vice-Doyen chargé de la Recherche</label>
+            <input type="text" id="vice_doyen_recherche" name="vice_doyen_recherche" value="{{ content_data.get('vice_doyen_recherche', 'P.O. ESAMBU MATENDA Jean-Bosco') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="vice_doyen_tutorat">Le Vice-Doyen chargé du Tutorat</label>
+            <input type="text" id="vice_doyen_tutorat" name="vice_doyen_tutorat" value="{{ content_data.get('vice_doyen_tutorat', 'Pr TSHIMPANGA MATALA Alidor') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="secretaire_academique">Le Secrétaire Académique de la Faculté</label>
+            <input type="text" id="secretaire_academique" name="secretaire_academique" value="{{ content_data.get('secretaire_academique', 'C.T. NGUZA KARL-BOND Jean-Pierre') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="secretaire_administratif">Le Secrétaire Administratif et Financier</label>
+            <input type="text" id="secretaire_administratif" name="secretaire_administratif" value="{{ content_data.get('secretaire_administratif', 'Mme NGOIE NGOMBE Annie') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="appariteur">L'Appariteur de la Faculté</label>
+            <input type="text" id="appariteur" name="appariteur" value="{{ content_data.get('appariteur', 'M. MUTERA LWAMBA Ozias') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="comptable">La Comptable de la Faculté</label>
+            <input type="text" id="comptable" name="comptable" value="{{ content_data.get('comptable', 'Mme MUKOSHA KALUNGA Florence') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="intendant">L'Intendant de la Faculté</label>
+            <input type="text" id="intendant" name="intendant" value="{{ content_data.get('intendant', 'Mme STAMILI BEMI BABA Espérance') }}" required>
+        </div>
+
+        <h4 style="color: #667eea; margin-top: 2rem; margin-bottom: 1rem;">🏢 Chefs de Département</h4>
+
+        <div class="form-group">
+            <label for="chef_anthropologie">Département d'Anthropologie - Chef de Département</label>
+            <input type="text" id="chef_anthropologie" name="chef_anthropologie" value="{{ content_data.get('chef_anthropologie', 'Pr KATSHUNGA KASONGO Théophile') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="chef_sociologie">Département de Sociologie et Sciences du travail - Chef de Département</label>
+            <input type="text" id="chef_sociologie" name="chef_sociologie" value="{{ content_data.get('chef_sociologie', 'Pr TSHIKA MU\'SANGU Sidoine') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="chef_relations_int">Département des Relations Internationales - Chef de Département</label>
+            <input type="text" id="chef_relations_int" name="chef_relations_int" value="{{ content_data.get('chef_relations_int', 'Pr LWAMBA MU\'GANZA Justin') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="chef_spa">Département des Sciences Politiques et Administratives - Chef de Département</label>
+            <input type="text" id="chef_spa" name="chef_spa" value="{{ content_data.get('chef_spa', 'Pr MWENZE MINZA Martin') }}" required>
+        </div>
+
+        <h4 style="color: #667eea; margin-top: 2rem; margin-bottom: 1rem;">🔬 Centres de Recherche</h4>
+
+        <div class="form-group">
+            <label for="directeur_cespac">Centre d'Études Politiques en Afrique Centrale (C.E.P.A.C.) - Directeur</label>
+            <input type="text" id="directeur_cespac" name="directeur_cespac" value="{{ content_data.get('directeur_cespac', 'Pr KALEMBWE LONGWE Jean-Pierre') }}" required>
+        </div>
+
+        <div class="form-group">
+            <label for="directeur_cee">Centre d'Études Électorales (C.E.E.) - Directeur</label>
+            <input type="text" id="directeur_cee" name="directeur_cee" value="{{ content_data.get('directeur_cee', 'Pr MWEMBU DIBWE') }}" required>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 Enregistrer les modifications</button>
+            <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">Retour au dashboard</a>
+            <a href="{{ url_for('a_propos') }}" class="btn btn-info" target="_blank">👁️ Voir la page</a>
+        </div>
+    </form>
+</div>
+
+<style>
+.form-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.decanat-form h3 {
+    color: #667eea;
+    margin-top: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+}
+
+.decanat-form h3:first-child {
+    margin-top: 0;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e0e0e0;
+}
+
+.btn-info {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-info:hover {
+    background: #138496;
+}
+
+.current-image {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 2px dashed #ccc;
+}
+</style>
+{% endblock %}

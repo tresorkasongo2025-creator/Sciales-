@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Relevés de cotes — DÉCANAT{% endblock %}
+
+{% block extra_css %}
+<style>
+.releve-wrap { max-width: 1180px; margin: 1.5rem auto; }
+.releve-hero { background:linear-gradient(135deg,#3b207a,#6f42c1); color:white;
+    border-radius:14px; padding:1.6rem 2rem; margin-bottom:1.2rem; }
+.releve-hero h2 { margin:0 0 .35rem; }
+.releve-hero p { margin:0; opacity:.9; }
+.releve-card { background:white; border-radius:12px; padding:1.35rem 1.5rem;
+    box-shadow:0 2px 12px rgba(0,0,0,.07); margin-bottom:1.2rem; }
+.releve-card h3 { margin:0 0 .8rem; color:#0d2666; border-bottom:2px solid #e8ecf5;
+    padding-bottom:.55rem; }
+.btn-releve { display:inline-flex; align-items:center; gap:.35rem; padding:.48rem .75rem;
+    border-radius:6px; text-decoration:none; font-size:.78rem; font-weight:700; color:white; }
+.btn-purple { background:#6f42c1; }
+.btn-blue { background:#1a4db8; }
+.btn-green { background:#198754; }
+.session-table { width:100%; border-collapse:collapse; font-size:.84rem; }
+.session-table th { background:#0d2666; color:white; padding:.55rem .65rem; text-align:left; }
+.session-table td { padding:.6rem .65rem; border-bottom:1px solid #e8ecf5; vertical-align:middle; }
+.session-table tr:nth-child(even) td { background:#fafbff; }
+.session-actions { display:flex; gap:.35rem; flex-wrap:wrap; }
+.student-list { margin-top:.7rem; background:#f7f9ff; border-radius:8px; padding:.7rem; }
+.student-list summary { cursor:pointer; color:#1a4db8; font-weight:700; font-size:.8rem; }
+.student-list a { color:#6f42c1; text-decoration:none; font-size:.78rem; }
+.empty { text-align:center; color:#777; padding:1.8rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="releve-wrap">
+    <div class="releve-hero">
+        <h2>📄 Génération des relevés de cotes</h2>
+        <p>Le modèle officiel fourni par la faculté est utilisé tel quel. Seules les données présentes dans la grille sont remplies.</p>
+    </div>
+
+    <div class="releve-card" style="border-left:5px solid {% if releves_public_accessible %}#198754{% else %}#dc3545{% endif %};">
+        <h3>🌐 Accès public étudiant</h3>
+        <p style="margin:.2rem 0 .9rem;color:#555;">
+            {% if releves_public_accessible %}
+            Le portail public « Relevés » est actuellement <strong style="color:#198754;">ACTIVÉ</strong>.
+            {% else %}
+            Le portail public « Relevés » est actuellement <strong style="color:#dc3545;">DÉSACTIVÉ</strong>.
+            {% endif %}
+            Ce réglage bloque aussi les aperçus, les images et les commandes étudiantes.
+        </p>
+        <form method="POST" action="{{ url_for('decanat_releves_acces_public') }}">
+            <input type="hidden" name="releves_public_access"
+                   value="{{ '0' if releves_public_accessible else '1' }}">
+            <button type="submit" class="btn-releve {% if releves_public_accessible %}btn-blue{% else %}btn-green{% endif %}">
+                {% if releves_public_accessible %}🔒 Désactiver l’accès public{% else %}🔓 Activer l’accès public{% endif %}
+            </button>
+        </form>
+    </div>
+
+    <div class="releve-card">
+        <h3>📚 Sessions disponibles</h3>
+        {% if sessions_list %}
+        <div style="overflow:auto;">
+        <table class="session-table">
+            <thead><tr>
+                <th>Département</th><th>Promotion</th><th>Étape</th><th>Année</th>
+                <th>Étudiants</th><th>Actions</th>
+            </tr></thead>
+            <tbody>
+            {% for bs in sessions_list %}
+            <tr>
+                <td>{{ bs.departement or '—' }}</td>
+                <td><strong>{{ bs.promotion }}</strong></td>
+                <td>{{ grid_type_labels.get(bs.type_grille|default('initial'), 'Première session') }}</td>
+                <td>{{ bs.annee }}<br><small style="color:#777;">{{ bs.semestre }}</small></td>
+                <td><strong>{{ bs.bulletins|length }}</strong></td>
+                <td>
+                    <div class="session-actions">
+                        <a class="btn-releve btn-green" target="_blank"
+                           href="{{ url_for('decanat_releves_cotes_zip', sid=bs.id) }}">⬇ ZIP Word officiel</a>
+                    </div>
+                    <details class="student-list">
+                        <summary>Choisir un étudiant</summary>
+                        {% for bd in bs.bulletins|sort(attribute='nom') %}
+                        <div style="display:flex;justify-content:space-between;gap:.5rem;padding:.3rem 0;border-bottom:1px solid #e3e8f2;">
+                            <span style="font-size:.78rem;">{{ bd.nom }}<br><small>{{ bd.matricule }}</small></span>
+                            <span style="white-space:nowrap;">
+                                <a href="{{ url_for('decanat_releve_cotes_apercu', sid=bs.id, bid=bd.id) }}">Ouvrir le modèle</a>
+                                ·
+                                <a href="{{ url_for('decanat_releve_cotes_pdf', sid=bs.id, bid=bd.id) }}">Word</a>
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </details>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty">📭 Aucune session importée. Importez d’abord une grille de délibération.</div>
+        {% endif %}
+    </div>
+
+    <div class="releve-card" id="commandes-releves">
+        <h3>📬 Commandes étudiantes de relevés</h3>
+        {% if releve_commandes %}
+        <div style="overflow:auto;">
+        <table class="session-table">
+            <thead><tr>
+                <th>Date</th><th>Étudiant</th><th>Matricule</th>
+                <th>Session</th><th>Reçu</th><th>Statut</th><th>Action</th>
+            </tr></thead>
+            <tbody>
+            {% for commande in releve_commandes %}
+            <tr>
+                <td>{{ commande.date_commande.strftime('%d/%m/%Y %H:%M') }}</td>
+                <td><strong>{{ commande.nom_etudiant }}</strong></td>
+                <td>{{ commande.matricule }}</td>
+                <td>{{ commande.bulletin.bul_session.promotion if commande.bulletin else '—' }}</td>
+                <td>{{ commande.recu.numero if commande.recu else '—' }}</td>
+                <td><strong>{{ commande.statut }}</strong></td>
+                <td>
+                    <form method="POST"
+                          action="{{ url_for('decanat_releve_commande_statut', commande_id=commande.id) }}"
+                          style="display:flex;gap:.3rem;align-items:center;">
+                        <select name="statut" style="font-size:.75rem;padding:.25rem;">
+                            {% for value in ['soumise', 'en_traitement', 'prete', 'remise', 'annulee'] %}
+                            <option value="{{ value }}" {% if commande.statut == value %}selected{% endif %}>{{ value }}</option>
+                            {% endfor %}
+                        </select>
+                        <button class="btn-releve btn-blue" type="submit">Enregistrer</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <div class="empty">Aucune commande étudiante pour le moment.</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Générateur de lettres - DECANAT{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>📄 Générateur automatique de lettres de charge horaire</h2>
+    <a href="{{ url_for('decanat_dashboard') }}" class="btn btn-secondary">← Tableau de bord</a>
+</div>
+
+<div style="background: #2c2c2c; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4CAF50;">
+    <h3 style="color: #4CAF50; margin-top: 0;">ℹ️ Instructions</h3>
+    <ul style="color: #ccc; line-height: 1.8;">
+        <li>Téléversez le fichier Excel contenant les données des professeurs et leurs cours</li>
+        <li>Téléversez votre modèle Word de lettre (avec pointillés et tableau)</li>
+        <li>Le système remplacera automatiquement :
+            <ul style="margin-top: 5px;">
+                <li>Les pointillés après "Lubumbashi, le" par la date actuelle</li>
+                <li>Les pointillés du nom par le nom de chaque professeur</li>
+                <li>Le tableau vide par le tableau rempli avec les données</li>
+            </ul>
+        </li>
+        <li>Une lettre sera générée pour chaque professeur (titulaire)</li>
+    </ul>
+</div>
+
+<form method="POST" enctype="multipart/form-data" style="background: #2c2c2c; padding: 30px; border-radius: 8px; margin: 20px 0;">
+    <div class="form-group" style="margin-bottom: 25px;">
+        <label for="fichier_excel" style="color: #fff; display: block; margin-bottom: 10px; font-size: 16px;">
+            📊 Fichier Excel <span style="color: #ff5252;">*</span>
+        </label>
+        <input type="file" 
+               id="fichier_excel" 
+               name="fichier_excel" 
+               accept=".xlsx,.xls" 
+               required
+               style="padding: 10px; border-radius: 5px; border: 2px solid #555; background: #1a1a1a; color: #fff; width: 100%; cursor: pointer;">
+        <small style="color: #888; display: block; margin-top: 5px;">
+            <strong>Colonnes requises :</strong> Cours (col. 2), SEM (col. 3), Promotion (col. 4), CMI/TD/TP (col. 5-7), Crédits (col. 9), Titulaire (col. 10)
+        </small>
+    </div>
+
+    <div class="form-group" style="margin-bottom: 25px;">
+        <label for="modele_word" style="color: #fff; display: block; margin-bottom: 10px; font-size: 16px;">
+            📝 Modèle Word de lettre
+            {% if template_manquant %}
+            <span style="color: #ff5252;">*</span>
+            {% else %}
+            <span style="color: #888; font-size: .8rem;">(optionnel — le modèle précédent sera réutilisé)</span>
+            {% endif %}
+        </label>
+        {% if template_manquant %}
+        <div style="background:#3a1a1a;border:1px solid #dc3545;border-radius:6px;padding:10px 14px;margin-bottom:10px;color:#f88;font-size:.9rem;">
+            ⚠️ Aucun modèle n'est enregistré. Vous devez en téléverser un pour générer des lettres.
+        </div>
+        {% endif %}
+        <input type="file"
+               id="modele_word"
+               name="modele_word"
+               accept=".docx"
+               {% if template_manquant %}required{% endif %}
+               style="padding: 10px; border-radius: 5px; border: 2px solid {% if template_manquant %}#dc3545{% else %}#555{% endif %}; background: #1a1a1a; color: #fff; width: 100%; cursor: pointer;">
+        <small style="color: #888; display: block; margin-top: 5px;">
+            Votre modèle doit contenir : <strong>"Lubumbashi, le ………."</strong>, <strong>"……………" (pour le nom)</strong> et un <strong>tableau vide</strong>
+        </small>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <button type="submit" class="btn btn-primary" style="padding: 15px 40px; font-size: 18px; background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);">
+            ⚙️ Générer les lettres
+        </button>
+    </div>
+</form>
+
+{% if lettres_generees %}
+<div style="background: #2c2c2c; padding: 20px; border-radius: 8px; margin: 20px 0; border: 2px solid #4CAF50;">
+    <h3 style="color: #4CAF50; margin-top: 0;">✅ Lettres générées avec succès !</h3>
+    <p style="color: #ccc; margin-bottom: 15px;">
+        <strong>{{ nombre_lettres }}</strong> lettre(s) générée(s) pour {{ nombre_professeurs }} professeur(s)
+    </p>
+    
+    <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
+        <a href="{{ url_for('decanat_telecharger_lettres', format='zip') }}" 
+           class="btn" 
+           style="background: #2196F3; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            📦 Télécharger tout (ZIP)
+        </a>
+        <a href="{{ url_for('decanat_telecharger_lettres', format='pdf') }}" 
+           class="btn" 
+           style="background: #dc3545; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+            📄 Télécharger tout (PDF)
+        </a>
+    </div>
+
+    <div style="margin-top: 25px;">
+        <h4 style="color: #fff;">📋 Liste des lettres générées :</h4>
+        <ul style="color: #ccc; line-height: 1.8;">
+            {% for lettre in lettres_generees %}
+            <li>
+                <strong>{{ lettre.professeur }}</strong> - {{ lettre.nombre_cours }} cours
+                <a href="{{ url_for('decanat_telecharger_lettre_individuelle', filename=lettre.filename) }}" 
+                   style="color: #4CAF50; margin-left: 10px;">
+                    ⬇️ Télécharger
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
