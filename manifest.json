@@ -1,0 +1,26 @@
+{
+  "name": "E-SCIALES UNILU+",
+  "short_name": "E-SCIALES",
+  "description": "Portail académique – Faculté des Sciences Sociales, Politiques et Administratives, UNILU",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a3a6b",
+  "theme_color": "#1a3a6b",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/static/logo-sciences-sociales.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/logo-sciences-sociales.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education"],
+  "orientation": "portrait"
+}
