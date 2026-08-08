@@ -1,0 +1,15 @@
+- [Deployment DB strategy](deployment-db-strategy.md) — app switched to SQLite + Reserved VM after Neon PostgreSQL credentials expired and could not be reset.
+- [Recours system](recours-system.md) — full appeals flow: public form → scan receipt → Recours DB record; DECANAT view with PDF export and orphaned-receipt repair tool.
+- [Imported receipt PDFs](receipt-pdf-import.md) — existing printed QR codes must be decoded and imported atomically; re-imports must be idempotent.
+- [Official matricule import safety](matricule-import-safety.md) — exact promotion lists, editable proposals, and no Excel matricule fallback before atomic validation.
+- [Persistent uploaded file storage](persistent-file-storage.md) — Autoscale local files are not durable; user uploads must be stored in persistent PostgreSQL and included in backups.
+- [Receipt QR compatibility](receipt-qr-compatibility.md) — normalize legacy `/scan/CODE` payloads as well as current recours QR paths before routing.
+- [Site visit counter](site-visit-counter.md) — persist homepage visit timestamps and show total plus today's count to the DÉCANAT.
+- [Recours promotion timers](recours-promotion-timers.md) — configure 1/24/48/72-hour deadlines per promotion and close all its filières at expiry.
+- [Recours PDF export](recours-pdf-export.md) — escape submitted text and retry without attachments so PDF downloads do not fail on production data.
+- [PostgreSQL boolean migration defaults](postgres-boolean-migrations.md) — use TRUE/FALSE literals when startup migrations add boolean columns.
+- [Bulletin and recours access separation](bulletin-recourse-access-separation.md) — initial bulletins and recours results use independent sessions and receipt types.
+- [Six receipt categories](six-receipt-categories.md) — keep submission and result receipts separate per session, with RS2 reserved for second-session submissions.
+- [Receipt consumption concurrency](receipt-consumption-concurrency.md) — combine row locking with a conditional unused-state update before assigning a receipt.
+- [Official relevé template](official-releve-template.md) — preserve the faculty DOCX exactly; replace only values already represented by its fields.
+- [Student relevé portal](releve-student-portal.md) — matricule access, watermarked HTML preview, and one-time REL receipt order without official-file download.
