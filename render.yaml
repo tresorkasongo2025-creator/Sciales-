@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: sciences-sociales-unilu
+    runtime: python
+    plan: free
+    region: frankfurt
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 180 app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.5
+      - key: SESSION_SECRET
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DECANAT_PASSWORD
+        value: DECANAT2026
+      - key: PROF_PASSWORD
+        value: PROF2026

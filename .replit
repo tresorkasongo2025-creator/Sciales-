@@ -1,0 +1,60 @@
+entrypoint = "main.py"
+modules = ["python-3.11", "postgresql-16"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["cargo", "freetype", "glibcLocales", "gumbo", "harfbuzz", "jbig2dec", "lcms2", "libiconv", "libimagequant", "libjpeg", "libjpeg_turbo", "libtiff", "libwebp", "libxcrypt", "mupdf", "openjpeg", "openssl", "pkg-config", "rustc", "swig", "tcl", "tk", "xcbuild", "zlib"]
+
+[unitTest]
+language = "python3"
+
+[gitHubImport]
+requiredFiles = [".replit", "replit.nix"]
+
+[deployment]
+build = ["pip", "install", "-r", "requirements.txt"]
+run = ["gunicorn", "--bind=0.0.0.0:5000", "--reuse-port", "--workers=2", "--timeout=180", "app:app"]
+deploymentTarget = "autoscale"
+
+[agent]
+expertMode = true
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "flask-server"
+
+[[workflows.workflow]]
+name = "flask-server"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python app.py"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 9998
+externalPort = 3001
+
+[[ports]]
+localPort = 9999
+externalPort = 3000
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 120000
